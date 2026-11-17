@@ -1,6 +1,10 @@
 import { apiRequest } from '@/lib/api-client'
-import type { ApiResponse } from '@/features/user/api'
-import { AddCartItemRequest } from '@/features/cart/api'
+
+export type ApiResponse<T> = {
+  success: boolean
+  message: string | null
+  data: T
+}
 
 export type OrderItemInput = {
   productId: number
@@ -34,18 +38,6 @@ export type OrderResponseData = {
     quantity: number
     totalPrice: number
   }>
-}
-
-export async function addCartItem(_input: AddCartItemRequest): Promise<void> {
-  throw new Error('TODO: 장바구니 추가 API를 연결하세요.')
-}
-
-export async function updateCart(_input: AddCartItemRequest): Promise<void> {
-  throw new Error('TODO: 장바구니 수정 API를 연결하세요.')
-}
-
-export async function deleteCart(): Promise<void> {
-  throw new Error('TODO: 장바구니 삭제 API를 연결하세요.')
 }
 
 export async function submitOrderApi(input: OrderCreateInput): Promise<OrderResponseData> {

@@ -5,6 +5,7 @@ import { useCart } from '@/features/cart/cart-provider'
 import { getCurrentUser } from '@/features/auth/api'
 import { formatPrice } from '@/lib/store-shared'
 import { OrderResponseData, submitOrderApi } from './api'
+import { useRouter } from 'next/navigation'
 
 export function CheckoutForm() {
   const { selectedItems, clearSelectedItems } = useCart()
@@ -13,6 +14,8 @@ export function CheckoutForm() {
   const [completedOrder, setCompletedOrder] = useState<OrderResponseData | null>(null)
   const [userEmail, setUserEmail] = useState('')
   const [phone, setPhone] = useState('')
+
+  const router = useRouter();
 
   useEffect(() => {
     getCurrentUser().then(({ user }) => {
@@ -205,6 +208,9 @@ export function CheckoutForm() {
           className="mt-7 h-14 w-full rounded-md bg-black text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-30"
           disabled={!selectedItems.length || isSubmitting}
           type="submit"
+          onClick={() => {
+            router.push('/dev/toss-order')
+          }}
         >
           {isSubmitting ? 'PROCESSING...' : 'PLACE ORDER'}
         </button>
