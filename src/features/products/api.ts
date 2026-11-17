@@ -8,8 +8,7 @@ import type { Category, GetProductsParams, ProductListResponse } from './types'
 export async function getCategories(): Promise<Category[]> {
   const res = await apiRequest<{ success: boolean; data: Category[] } | Category[]>('/api/categories')
   if (res && 'data' in res && Array.isArray(res.data)) return res.data
-  if (Array.isArray(res)) return res
-  return []
+  return Array.isArray(res) ? res : []
 }
 
 /**
@@ -25,13 +24,15 @@ export async function getPaginatedProducts(
   if (params.size !== undefined) search.set('size', String(params.size))
 
   const queryString = search.toString() ? `?${search.toString()}` : ''
-  const res = await apiRequest<{ success: boolean; data: ProductListResponse } | ProductListResponse>(`/api/products${queryString}`)
+  const res = await apiRequest<{ success: boolean; data: ProductListResponse } | ProductListResponse>(
+    `/api/products${queryString}`,
+  )
   if (res && 'data' in res && res.data) return res.data
   return res as ProductListResponse
 }
 
 /**
- * 상품 목록 조회 (백엔드 API 직접 호출)
+ * 상품 목록 조회 (백엔드 API 직접 호출, 목업 fallback 없음)
  */
 export async function getProducts(
   categoryOrParams?: StoreProduct['category'] | GetProductsParams,
@@ -43,10 +44,9 @@ export async function getProducts(
 
   const category = categoryOrParams as StoreProduct['category'] | undefined
   const query = category ? `?category=${category}` : ''
-  const result = await apiRequest<{ success: boolean; data: any } | any>(`/api/products${query}`)
-  const data = result && 'data' in result ? result.data : result
-  if (Array.isArray(data)) return data
-  if (data && Array.isArray(data.content)) return data.content
+  const result = await apiRequest<StoreProduct[] | ProductListResponse>(`/api/products${query}`)
+  if (Array.isArray(result)) return result
+  if (result && Array.isArray(result.content)) return result.content
   throw new Error('백엔드 상품 목록 응답 형식이 올바르지 않습니다.')
 }
 
@@ -55,7 +55,9 @@ export async function getProducts(
  */
 export async function getProductById(productId: string | number): Promise<StoreProduct> {
   const idStr = String(productId)
-  const res = await apiRequest<{ success: boolean; data: StoreProduct } | StoreProduct>(`/api/products/${encodeURIComponent(idStr)}`)
+  const res = await apiRequest<{ success: boolean; data: StoreProduct } | StoreProduct>(
+    `/api/products/${encodeURIComponent(idStr)}`,
+  )
   if (res && 'data' in res && res.data) return res.data
   return res as StoreProduct
 }

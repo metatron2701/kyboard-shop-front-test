@@ -52,254 +52,235 @@ function getCategoryStory(product: StoreProduct): {
     }
   }
 
-  if (product.category === 'pcb' || product.category === 'keyboards') {
-    const isWireless = product.isWireless ? '유무선 3-모드' : '유선 전용'
-    const pins = product.supportPins?.length ? `${product.supportPins.join(' / ')}핀 지원` : '범용 핫스왑'
+  if (product.category === 'pcb') {
+    const isWireless = Boolean(product.isWireless) || sub.includes('무선')
+    const isSolder = product.categoryId === 'pcb-solder' || sub.includes('솔더링')
+    const isBarebone = Boolean(product.categoryId?.startsWith('kb-'))
+
     return {
-      eyebrow: 'CIRCUIT ENGINE',
-      headline: `${product.layout || '커스텀'} 레이아웃, 반응 속도와 호환성을 겸비한 메인보드.`,
+      eyebrow: isBarebone ? 'BAREBONE KIT' : 'PCB ENGINEERING',
+      headline: isBarebone
+        ? '하우징과 기판이 조립된 베어본 키트로 빠르고 완벽한 커스텀 빌드를 경험하세요.'
+        : '정확한 입력과 폭넓은 커스터마이징을 뒷받침하는 핵심 기판.',
       highlights: [
         {
           badge: '01 · CONNECTIVITY',
-          title: `${isWireless} 연결성`,
-          detail: product.isWireless
-            ? '초저지연 2.4GHz 무선, 블루투스 5.0, Type-C 유선 연결을 모두 지원해 다양한 환경에서 끊김 없이 작동합니다.'
-            : '안정적인 Type-C 유선 연결로 1,000Hz 폴링레이트를 완벽하게 지원해 빠른 입력과 게이밍에 최적화되었습니다.',
+          title: isWireless ? '트라이모드 유·무선 지원' : '초저지연 유선 USB-C 연결',
+          detail: isWireless
+            ? 'USB-C 유선, 블루투스 멀티페어링, 2.4GHz 전용 리시버를 자유롭게 오가며 멀티 디바이스 환경을 구축할 수 있습니다.'
+            : '안정적인 폴링레이트와 끊김 없는 신호 전달을 보장하는 표준 USB Type-C 인터페이스를 지원합니다.',
         },
         {
-          badge: '02 · HOT-SWAP',
-          title: `소켓 체결식 ${pins}`,
-          detail: '납땜(Soldering) 없이 스위치 풀러만으로 언제든지 원하는 스위치를 자유롭게 교체하고 빌드할 수 있습니다.',
+          badge: '02 · SOCKET',
+          title: isSolder ? '클래식 솔더링 마니아 규격' : '납땜 없는 핫스왑 소켓',
+          detail: isSolder
+            ? '원하는 위치에 스위치를 직접 납땜하여 유격 없는 완벽한 일체감과 다양한 스플릿 배열 커스텀이 가능합니다.'
+            : '카일/게이트론 정품 핫스왑 소켓이 사전 실장되어 납땜 없이 스위치를 손쉽게 꽂고 교체할 수 있습니다.',
         },
         {
-          badge: '03 · PROGRAMMABLE',
-          title: '키 매핑 및 매크로 지원',
-          detail: '키보드 매핑 웹 GUI를 통해 모든 키의 기능, 레이어 전환, 복합 매크로를 취향대로 커스터마이징할 수 있습니다.',
+          badge: '03 · COMPATIBILITY',
+          title: `${product.supportPins?.join('/') || '3/5'}핀 스위치 호환 & QMK/VIA`,
+          detail: `3핀·5핀 체리식 기계식 스위치를 폭넓게 지원하며, ${product.layout ? `${product.layout}% 배열` : '표준'} 하우징과 완벽히 호환됩니다.`,
         },
       ],
-      packageContents: [
-        `${product.name} PCB 기판`,
-        'Type-C 연결 케이블',
-        '배터리 연결 케이블 (무선 지원 모델 한정)',
-      ],
+      packageContents: isBarebone
+        ? [
+            `${product.name} 베어본 본체 (하우징 + PCB + 보강판)`,
+            '스테빌라이저 기본 장착',
+            'USB-C 파라코드 케이블 및 스위치/키캡 풀러',
+          ]
+        : [
+            `${product.name} 기판 본체 (사전 검수 완료)`,
+            '정전기 방지 실드 패키지',
+            '초기 불량 테스트 체크리스트',
+          ],
     }
   }
 
   if (product.category === 'switches') {
-    const swType = product.switchType || '기계식'
-    const pinCount = product.pin ? `${product.pin}핀` : '3/5핀 호환'
+    const type = product.switchType || sub || '기계식'
     return {
-      eyebrow: 'TACTILE SENSATION',
-      headline: `매 스트로크마다 손끝에 전달되는 ${swType} 스위치 고유의 피드백.`,
+      eyebrow: 'SWITCH DYNAMICS',
+      headline: `매 타이핑마다 손끝에 전해지는 ${sub || type} 특유의 선명한 타건감.`,
       highlights: [
         {
-          badge: '01 · ACTUATION',
-          title: `${swType} 메커니즘`,
-          detail: swType.includes('리니어')
-            ? '걸림 없이 매끄럽게 내려가는 스트로크와 정갈한 바닥 타건음으로 장시간 타이핑에도 피로감이 적습니다.'
-            : swType.includes('택타일')
-              ? '눌리는 순간 확실한 구분감을 주어 오타를 줄이고 리드미컬한 타건의 즐거움을 극대화합니다.'
-              : `${swType} 특유의 뚜렷한 피드백과 조화로운 사운드로 타이핑의 몰입감을 높여줍니다.`,
+          badge: '01 · FEEL & SOUND',
+          title: `${sub || type} 스위치 특성`,
+          detail:
+            type === 'linear' || sub.includes('리니어')
+              ? '걸림 없이 바닥까지 매끄럽게 눌리는 직선적인 키감으로 빠른 게이밍과 장시간 타이핑 모두에 적합합니다.'
+              : type === 'tactile' || sub.includes('택타일')
+                ? '누르는 순간 또렷하게 걸리는 구분감과 경쾌한 반발력으로 타이핑의 즐거움을 극대화합니다.'
+                : type === 'silent' || sub.includes('저소음')
+                  ? '내부 댐퍼 구조가 바닥 치는 소음과 복귀음을 흡수하여 사무실·도서관 등 정숙한 환경에 최적화되었습니다.'
+                  : '명쾌한 클릭 바/재킷 구조로 타자기 같은 경쾌한 클릭음과 명확한 입력 피드백을 전달합니다.',
         },
         {
-          badge: '02 · MOUNTING',
-          title: `${pinCount} 안정적 고정 구조`,
-          detail: '스위치 체결 시 흔들림을 억제하고 스템 유격을 최소화하여 균일한 키감을 유지합니다.',
+          badge: '02 · PIN SPEC',
+          title: `안정적인 ${product.pin || 5}핀(PCB 마운트) 구조`,
+          detail: '기판 위에서 스위치가 흔들리지 않도록 좌우 고정 다리가 결합되어 균일하고 정갈한 타건감을 유지합니다.',
         },
         {
-          badge: '03 · FACTORY LUBE',
-          title: '정밀 팩토리 윤활',
-          detail: '공장 출고 단계에서 스템 및 스프링에 균일한 윤활 처리가 적용되어 서걱임과 스프링 소음을 획기적으로 줄였습니다.',
+          badge: '03 · PACKAGE',
+          title: '90개입 넉넉한 풀 구성',
+          detail: '65%, 75%, 텐키리스(87키) 키보드 1대를 여유롭게 채우고 스페어 스위치까지 확보할 수 있는 90개입 패키지입니다.',
         },
       ],
       packageContents: [
-        `${product.name} 팩 (옵션 지정 수량)`,
-        '보관용 스위치 트레이 패키지',
+        `${product.name} (90개입 1세트)`,
+        '핀 휨 방지 전용 보관 컨테이너',
+        '체리식(+) 십자 스템 호환',
       ],
     }
   }
 
-  // Keycaps
-  const keyMat = product.material || 'PBT'
+  // keycaps
   return {
-    eyebrow: 'SURFACE & PROFILE',
-    headline: `내구성과 디자인을 겸비한 ${keyMat} 프로파일 키캡 세트.`,
+    eyebrow: 'KEYCAP CRAFTSMANSHIP',
+    headline: `${mat} 소재의 질감과 풀배열 호환성을 갖춘 데스크의 마지막 퍼즐.`,
     highlights: [
       {
-        badge: '01 · MATERIAL',
-        title: `${keyMat} 프리미엄 소재`,
-        detail: '오랜 시간 사용해도 번들거림(마모)에 강하며 뽀송뽀송하고 매트한 텍스처를 오랫동안 유지합니다.',
+        badge: '01 · TEXTURE',
+        title: `${mat} 프리미엄 소재`,
+        detail: sub.includes('PBT')
+          ? '두꺼운 PBT 원사를 사용해 장기간 사용해도 번들거림이 적고, 뽀송하고 정갈한 로우피치 타건음을 들려줍니다.'
+          : sub.includes('ABS')
+            ? '선명하고 깊이 있는 발색과 경계면이 또렷한 이중사출 각인이 돋보이며, 경쾌하고 맑은 하이피치 사운드를 냅니다.'
+            : '매끄러운 자기윤활성 POM 소재 특유의 조약돌 부딪히는 듯한 묵직한 타건음과 은은한 빛 투과력을 자랑합니다.',
       },
       {
-        badge: '02 · PRINTING',
-        title: '선명한 각인 & 변색 방지',
-        detail: '염료승화 또는 이중사출 공정으로 각인이 지워지지 않고 미세한 폰트 디테일까지 선명하게 표현됩니다.',
+        badge: '02 · UNIVERSAL FIT',
+        title: '풀배열 공용 호환 키트',
+        detail: '104키 풀배열부터 87키 텐키리스, 75%, 65% 배열까지 모두 장착할 수 있도록 다양한 길이의 쉬프트·모디파이어 키가 포함되어 있습니다.',
       },
       {
-        badge: '03 · COMPATIBILITY',
-        title: '다양한 레이아웃 풀 세트',
-        detail: '표준 104키뿐 아니라 65%, 75%, 텐키리스, 윈도우/맥 전용 모디열까지 폭넓게 호환되는 풍부한 키 구성을 제공합니다.',
+        badge: '03 · STEM',
+        title: '체리식(+) 스위치 100% 호환',
+        detail: '표준 십자(+) 모양 스템을 채택한 체리, 게이트론, 카일, HMX 등 대부분의 기계식 스위치에 안정적으로 결합됩니다.',
       },
     ],
     packageContents: [
-      `${product.name} 키캡 세트`,
-      '와이어 키캡 풀러',
-      '전용 2단 블리스터 보관 트레이',
+      `${product.name} 풀배열 공용 키캡 세트`,
+      '각인 보호 전용 트레이 포장',
+      '와이어 키캡 리무버 1개 증정',
     ],
   }
 }
 
 export function ProductDetailStory({
   product,
-  gallery,
+  galleryImages,
 }: {
   product: StoreProduct
-  gallery: StoreMedia[]
+  galleryImages: Array<{ id: string | number; url: string; alt: string }>
 }) {
   const story = getCategoryStory(product)
-  const visualImage = gallery[1] || gallery[0]
+  const extraImages = galleryImages.length > 1 ? galleryImages.slice(1) : galleryImages
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
 
   return (
-    <div className="mt-28 space-y-24 border-t border-zinc-200 pt-20">
-      {/* 1. 아키텍처 / 콘셉트 헤더 */}
-      <div className="mx-auto max-w-3xl text-center">
-        <span className="text-[11px] font-bold tracking-[0.2em] text-zinc-400">
-          {story.eyebrow}
-        </span>
-        <h2 className="mt-3 text-3xl font-medium tracking-[-0.04em] text-zinc-950 sm:text-4xl">
-          {story.headline}
-        </h2>
-        {product.description && (
-          <p className="mt-5 text-sm leading-relaxed text-zinc-600 sm:text-base">
-            {product.description}
-          </p>
-        )}
-      </div>
-
-      {/* 2. 대형 비주얼 컷 (서브 갤러리 활용) */}
-      {visualImage?.url && (
-        <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-zinc-100 shadow-sm sm:aspect-[21/9]">
-          <Image
-            alt={visualImage.alt || product.name}
-            className="object-cover"
-            fill
-            sizes="(max-width: 1440px) 90vw, 1300px"
-            src={visualImage.url}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-          <div className="absolute bottom-6 left-6 text-white sm:bottom-10 sm:left-10">
-            <p className="text-xs font-semibold tracking-widest uppercase text-white/80">
-              {product.brand}
-            </p>
-            <p className="mt-1 text-lg font-medium tracking-tight sm:text-2xl">{product.name}</p>
-          </div>
-        </div>
-      )}
-
-      {/* 3. 3단 스펙 하이라이트 카드 그리드 */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-        {story.highlights.map((item, idx) => (
-          <div
-            key={idx}
-            className="flex flex-col justify-between rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-7 transition hover:border-zinc-300 hover:bg-zinc-50"
+    <div className="mt-24 border-t border-zinc-200 pt-10">
+      {/* 섹션 앵커 네비게이션 */}
+      <nav
+        aria-label="상품 상세 정보 목차"
+        className="sticky top-18 z-20 -mx-2 mb-14 flex flex-wrap items-center gap-2 border-b border-zinc-200 bg-white/90 px-2 py-3 backdrop-blur-md md:top-21"
+      >
+        {[
+          { id: 'detail-story', label: '01. 제품 스토리' },
+          { id: 'detail-gallery', label: '02. 디테일 룩북' },
+          { id: 'detail-specs', label: '03. 스펙 & 호환성' },
+          { id: 'detail-shipping', label: '04. 배송 및 교환 안내' },
+        ].map((tab) => (
+          <button
+            className="rounded-full px-4 py-2 text-xs font-semibold tracking-wider text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950"
+            key={tab.id}
+            onClick={() => scrollToSection(tab.id)}
+            type="button"
           >
-            <div>
-              <span className="font-mono text-[11px] font-bold tracking-wider text-zinc-400">
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      {/* 01. 제품 스토리 & 카테고리 핵심 특징 */}
+      <section className="scroll-mt-36 space-y-10" id="detail-story">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold tracking-[0.22em] text-zinc-400">{story.eyebrow}</p>
+          <h2 className="mt-3 text-3xl font-medium tracking-[-0.04em] text-zinc-950 max-md:text-2xl">
+            {story.headline}
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-zinc-600">{product.description}</p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-6 max-lg:grid-cols-1">
+          {story.highlights.map((item) => (
+            <div
+              className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-7 transition hover:border-zinc-300 hover:bg-white"
+              key={item.badge}
+            >
+              <span className="text-[11px] font-bold tracking-[0.18em] text-zinc-400">
                 {item.badge}
               </span>
-              <h3 className="mt-3 text-base font-semibold tracking-tight text-zinc-900">
+              <h3 className="mt-3 text-lg font-semibold tracking-[-0.02em] text-zinc-950">
                 {item.title}
               </h3>
-              <p className="mt-2 text-xs leading-relaxed text-zinc-600 sm:text-sm">
-                {item.detail}
-              </p>
+              <p className="mt-3 text-sm leading-6 text-zinc-600">{item.detail}</p>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* 4. 상세 스펙 테이블 & 패키지 구성품 */}
-      <div className="grid grid-cols-1 gap-12 rounded-2xl border border-zinc-200 bg-white p-8 sm:grid-cols-2 sm:p-12">
-        {/* 좌측: 기술 사양 요약 */}
-        <div>
-          <h3 className="text-xs font-bold tracking-[0.16em] text-zinc-400 uppercase">
-            SPECIFICATIONS
-          </h3>
-          <p className="mt-1 text-xl font-medium tracking-tight text-zinc-900">기술 사양</p>
-          <dl className="mt-6 divide-y divide-zinc-100 text-sm">
-            <div className="flex justify-between py-3">
-              <dt className="text-zinc-500">부품 분류</dt>
-              <dd className="font-medium text-zinc-900 uppercase">{product.category}</dd>
-            </div>
-            {product.subCategoryName && (
-              <div className="flex justify-between py-3">
-                <dt className="text-zinc-500">소분류</dt>
-                <dd className="font-medium text-zinc-900">{product.subCategoryName}</dd>
-              </div>
-            )}
-            {product.layout && (
-              <div className="flex justify-between py-3">
-                <dt className="text-zinc-500">지원 배열</dt>
-                <dd className="font-medium text-zinc-900">{product.layout}% Layout</dd>
-              </div>
-            )}
-            {product.material && (
-              <div className="flex justify-between py-3">
-                <dt className="text-zinc-500">하우징 / 키캡 소재</dt>
-                <dd className="font-medium text-zinc-900">{product.material}</dd>
-              </div>
-            )}
-            {product.switchType && (
-              <div className="flex justify-between py-3">
-                <dt className="text-zinc-500">스위치 타입</dt>
-                <dd className="font-medium text-zinc-900">{product.switchType}</dd>
-              </div>
-            )}
-            {product.pin !== undefined && product.pin !== null && (
-              <div className="flex justify-between py-3">
-                <dt className="text-zinc-500">스위치 핀</dt>
-                <dd className="font-medium text-zinc-900">{product.pin} Pin</dd>
-              </div>
-            )}
-            {product.supportPins && product.supportPins.length > 0 && (
-              <div className="flex justify-between py-3">
-                <dt className="text-zinc-500">지원 핀 호환</dt>
-                <dd className="font-medium text-zinc-900">
-                  {product.supportPins.join(' / ')} Pin 호환
-                </dd>
-              </div>
-            )}
-            {product.isWireless !== undefined && product.isWireless !== null && (
-              <div className="flex justify-between py-3">
-                <dt className="text-zinc-500">무선 지원</dt>
-                <dd className="font-medium text-zinc-900">
-                  {product.isWireless ? '블루투스 & 2.4GHz 무선 지원' : 'Type-C 유선 전용'}
-                </dd>
-              </div>
-            )}
-            <div className="flex justify-between py-3">
-              <dt className="text-zinc-500">브랜드</dt>
-              <dd className="font-medium text-zinc-900">{product.brand}</dd>
-            </div>
-            <div className="flex justify-between py-3">
-              <dt className="text-zinc-500">재고 수량</dt>
-              <dd className="font-medium text-zinc-900">{product.stockQuantity}개 남음</dd>
-            </div>
-          </dl>
+          ))}
         </div>
+      </section>
 
-        {/* 우측: 패키지 구성품 및 안내 */}
-        <div className="flex flex-col justify-between">
-          <div>
-            <h3 className="text-xs font-bold tracking-[0.16em] text-zinc-400 uppercase">
-              PACKAGE CONTENTS
-            </h3>
-            <p className="mt-1 text-xl font-medium tracking-tight text-zinc-900">기본 구성품</p>
-            <ul className="mt-6 space-y-3">
-              {story.packageContents.map((content, idx) => (
-                <li key={idx} className="flex items-center gap-3 text-sm text-zinc-700">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-[10px] font-bold text-zinc-700">
-                    {idx + 1}
+      {/* 02. 디테일 갤러리 룩북 */}
+      {extraImages.length > 0 && (
+        <section className="mt-24 scroll-mt-36 space-y-6" id="detail-gallery">
+          <div className="flex items-end justify-between border-b border-zinc-200 pb-4">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.2em] text-zinc-400">DETAIL GALLERY</p>
+              <h2 className="mt-1.5 text-2xl font-medium tracking-[-0.03em]">
+                클로즈업 디테일 컷
+              </h2>
+            </div>
+            <span className="text-xs text-zinc-400">{extraImages.length} Cut View</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1">
+            {extraImages.map((img, idx) => (
+              <div
+                className={`relative overflow-hidden rounded-2xl bg-zinc-100 ${
+                  idx === 0 && extraImages.length === 3 ? 'col-span-2 aspect-video max-md:col-span-1 max-md:aspect-4/3' : 'aspect-4/3'
+                }`}
+                key={img.id || idx}
+              >
+                <Image
+                  alt={img.alt || `${product.name} 상세 이미지 ${idx + 1}`}
+                  className="object-cover transition duration-700 hover:scale-[1.03]"
+                  fill
+                  sizes="(max-width: 768px) 92vw, 45vw"
+                  src={img.url}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 03. 상세 스펙 & 구성품 & 호환성 가이드 */}
+      <section className="mt-24 scroll-mt-36" id="detail-specs">
+        <div className="grid grid-cols-2 gap-8 max-lg:grid-cols-1">
+          <div className="rounded-2xl border border-zinc-200 p-8">
+            <p className="text-xs font-semibold tracking-[0.2em] text-zinc-400">IN THE BOX</p>
+            <h3 className="mt-2 text-xl font-medium tracking-[-0.03em]">기본 패키지 구성품</h3>
+            <ul className="mt-6 space-y-3 text-sm text-zinc-700">
+              {story.packageContents.map((content) => (
+                <li className="flex items-center gap-3" key={content}>
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-[10px] font-bold text-white">
+                    ✓
                   </span>
                   <span>{content}</span>
                 </li>
@@ -307,25 +288,73 @@ export function ProductDetailStory({
             </ul>
           </div>
 
-          <div className="mt-8 rounded-xl bg-zinc-50 p-5 text-xs text-zinc-500">
-            <p className="font-semibold text-zinc-700">배송 및 조립 유의사항</p>
-            <p className="mt-1 leading-relaxed">
-              본 제품은 커스텀 키보드 DIY 부품으로 사용자의 규격(배열, 핀, 보강판 호환성) 확인 후
-              구매를 권장합니다. 안전한 에어캡 완충 포장으로 발송됩니다.
-            </p>
+          <div className="flex flex-col justify-between rounded-2xl border border-zinc-200 bg-zinc-950 p-8 text-white">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.2em] text-zinc-400">
+                CUSTOM BUILDER GUIDE
+              </p>
+              <h3 className="mt-2 text-xl font-medium tracking-[-0.03em]">
+                다른 부품과의 호환성이 고민되시나요?
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-zinc-300">
+                MONO / STUDIO 커스텀 빌더를 이용하시면 하우징 배열, PCB 핀 규격, 스위치 호환성을
+                자동으로 검증하여 실패 없는 나만의 키보드를 조합할 수 있습니다.
+              </p>
+            </div>
+            <div className="mt-6">
+              <Link
+                className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-xs font-semibold tracking-wider text-zinc-950 transition hover:bg-zinc-200"
+                href="/custom"
+              >
+                커스텀 키보드 빌더로 호환성 확인하기 →
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 5. 하단 CTA */}
-      <div className="border-t border-zinc-200 pt-16 text-center">
-        <Link
-          className="inline-flex h-12 items-center justify-center rounded-full border border-zinc-300 px-8 text-xs font-semibold tracking-wider text-zinc-800 transition hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"
-          href={`/products?category=${product.category}`}
-        >
-          같은 {product.category.toUpperCase()} 카테고리 상품 더보기
-        </Link>
-      </div>
+      {/* 04. 배송 및 교환/반품 안내 */}
+      <section className="mt-24 scroll-mt-36" id="detail-shipping">
+        <div className="rounded-2xl border border-zinc-200 bg-zinc-50/50 p-8">
+          <p className="text-xs font-semibold tracking-[0.2em] text-zinc-400">
+            DELIVERY &amp; POLICY
+          </p>
+          <h3 className="mt-2 text-xl font-medium tracking-[-0.03em]">배송 및 교환/반품 안내</h3>
+          <div className="mt-6 grid grid-cols-3 gap-6 text-sm leading-6 text-zinc-600 max-lg:grid-cols-1">
+            <div>
+              <p className="font-semibold text-zinc-900">배송 안내</p>
+              <p className="mt-1.5">
+                평일 오후 2시 이전 결제 완료 건은 당일 출고되며, 영업일 기준 평균 1~2일 이내
+                수령하실 수 있습니다. (전 품목 안전 에어캡 완충 포장 발송)
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-zinc-900">교환 및 반품</p>
+              <p className="mt-1.5">
+                단순 변심에 의한 교환/반품은 상품 수령 후 7일 이내 미개봉 상태에 한해 가능합니다.
+                납땜(솔더링)이나 조립 흔적이 있는 경우 반품이 제한됩니다.
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-zinc-900">품질 보증 및 A/S</p>
+              <p className="mt-1.5">
+                초기 불량(기판 인식 불량, 부품 파손 등) 확인 시 무상 1:1 교환을 지원합니다.
+                택배 이동 중 스위치 다리가 미세하게 휘어진 경우 핀셋으로 펴서 정상 사용 가능합니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 리뷰 오픈 예정 안내 (팀원 연동 후 오픈) */}
+      <section className="mt-16 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/40 px-8 py-10 text-center">
+        <p className="text-xs font-semibold tracking-[0.2em] text-zinc-400">CUSTOMER REVIEWS</p>
+        <h3 className="mt-2 text-lg font-medium text-zinc-800">실구매자 리뷰</h3>
+        <p className="mt-1.5 text-sm text-zinc-500">
+          회원 및 주문 내역 시스템 통합 연동 완료 후 실제 구매 인증 리뷰 작성 및 조회가 지원될
+          예정입니다.
+        </p>
+      </section>
     </div>
   )
 }

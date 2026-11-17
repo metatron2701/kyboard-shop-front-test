@@ -50,7 +50,7 @@ export function BackendErrorState({
           onClick={handleRetry}
           type="button"
         >
-          다시 시도
+          다시 연결 시도
         </button>
       </div>
     </div>

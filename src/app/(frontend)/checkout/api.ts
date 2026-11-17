@@ -26,7 +26,6 @@ export type OrderResponseData = {
   ordererPhone: string
   ordererEmail: string
   totalProductAmount: number
-  couponDiscountAmount?: number
   deliveryFee: number
   finalPayAmount: number
   orderedAt?: string

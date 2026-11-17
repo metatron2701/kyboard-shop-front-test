@@ -38,7 +38,7 @@ export interface Product {
   material?: string
   style?: string
   isSoldOut?: boolean
-  status?: 'ACTIVE' | 'SOLD_OUT' | 'DISCONTINUED'
+  status?: 'ACTIVE' | 'SOLD_OUT'
   selectedOption?: ProductOption | null
   galleryImages?: string[]
   subCategoryName?: string
@@ -53,8 +53,24 @@ export interface ProductListResponse {
 }
 
 export interface GetProductsParams {
-  categoryId?: string
-  subcategoryId?: string
+  categoryId?: string | null
+  subcategoryId?: string | null
   page?: number
   size?: number
+}
+
+export interface CustomBuildSelection {
+  housing: Product | null
+  pcb: Product | null
+  switchPart: Product | null
+  keycap: Product | null
+}
+
+export interface RecommendedBuild {
+  housing: Product
+  pcb: Product
+  switchPart: Product
+  keycap: Product
+  assemblyFee: number
+  totalPrice: number
 }

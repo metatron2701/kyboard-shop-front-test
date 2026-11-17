@@ -10,13 +10,11 @@ export function ProductCard({
   priority?: boolean
 }) {
   const image = mediaFrom(product.images[0])
-  const isDiscontinued = product.status === 'DISCONTINUED'
   const isSoldOut = isProductSoldOut(product)
-  const isUnavailable = isDiscontinued || isSoldOut
 
   return (
     <Link
-      className={`group flex aspect-[4/5] flex-col overflow-hidden bg-zinc-100 transition ${isUnavailable ? 'opacity-80' : ''}`}
+      className={`group flex aspect-[4/5] flex-col overflow-hidden bg-zinc-100 transition ${isSoldOut ? 'opacity-80' : ''}`}
       href={`/products/${product.id}`}
     >
       <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -34,15 +32,11 @@ export function ProductCard({
             IMAGE PENDING
           </div>
         )}
-        {isDiscontinued ? (
-          <span className="absolute right-3 top-3 rounded bg-zinc-700 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-white">
-            DISCONTINUED
-          </span>
-        ) : isSoldOut ? (
+        {isSoldOut && (
           <span className="absolute right-3 top-3 rounded bg-zinc-950 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-white">
             SOLD OUT
           </span>
-        ) : null}
+        )}
       </div>
       <div className="flex min-h-24 items-end justify-between gap-4 px-5 py-5">
         <div className="min-w-0">
