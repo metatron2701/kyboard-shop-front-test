@@ -53,24 +53,8 @@ export interface ProductListResponse {
 }
 
 export interface GetProductsParams {
-  categoryId?: string | null
-  subcategoryId?: string | null
+  categoryId?: string
+  subcategoryId?: string
   page?: number
   size?: number
-}
-
-export interface CustomBuildSelection {
-  housing: Product | null
-  pcb: Product | null
-  switchPart: Product | null
-  keycap: Product | null
-}
-
-export interface RecommendedBuild {
-  housing: Product
-  pcb: Product
-  switchPart: Product
-  keycap: Product
-  assemblyFee: number
-  totalPrice: number
 }

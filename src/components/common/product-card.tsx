@@ -1,12 +1,17 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { formatPrice, mediaFrom, type StoreProduct } from '@/lib/store-shared'
+import { formatPrice, isProductSoldOut, mediaFrom, type StoreProduct } from '@/lib/store-shared'
 
-export function ProductCard({ product }: { product: StoreProduct }) {
+export function ProductCard({
+  product,
+  priority = false,
+}: {
+  product: StoreProduct
+  priority?: boolean
+}) {
   const image = mediaFrom(product.images[0])
   const isDiscontinued = product.status === 'DISCONTINUED'
-  const isSoldOut =
-    Boolean(product.isSoldOut) || product.stockQuantity <= 0 || product.status === 'SOLD_OUT'
+  const isSoldOut = isProductSoldOut(product)
   const isUnavailable = isDiscontinued || isSoldOut
 
   return (
@@ -20,6 +25,7 @@ export function ProductCard({ product }: { product: StoreProduct }) {
             alt={image.alt || product.name}
             className="object-cover transition duration-700 group-hover:scale-[1.035]"
             fill
+            priority={priority}
             sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 20vw"
             src={image.url}
           />
@@ -40,7 +46,9 @@ export function ProductCard({ product }: { product: StoreProduct }) {
       </div>
       <div className="flex min-h-24 items-end justify-between gap-4 px-5 py-5">
         <div className="min-w-0">
-          <h3 className="truncate text-sm font-medium tracking-[-0.025em]">{product.name}</h3>
+          <h3 className="truncate text-sm font-medium tracking-[-0.025em]" title={product.name}>
+            {product.name}
+          </h3>
           <p className="mt-1 text-[11px] text-zinc-400">{product.brand}</p>
         </div>
         <span className="shrink-0 text-sm font-medium">{formatPrice(product.basePrice)}</span>

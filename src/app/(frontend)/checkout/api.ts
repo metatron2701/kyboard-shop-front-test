@@ -1,6 +1,10 @@
 import { apiRequest } from '@/lib/api-client'
-import type { ApiResponse } from '@/features/user/api'
-import { AddCartItemRequest } from '@/features/cart/api'
+
+export type ApiResponse<T> = {
+  success: boolean
+  message: string | null
+  data: T
+}
 
 export type OrderItemInput = {
   productId: number
@@ -22,6 +26,7 @@ export type OrderResponseData = {
   ordererPhone: string
   ordererEmail: string
   totalProductAmount: number
+  couponDiscountAmount?: number
   deliveryFee: number
   finalPayAmount: number
   orderedAt?: string
@@ -34,18 +39,6 @@ export type OrderResponseData = {
     quantity: number
     totalPrice: number
   }>
-}
-
-export async function addCartItem(_input: AddCartItemRequest): Promise<void> {
-  throw new Error('TODO: 장바구니 추가 API를 연결하세요.')
-}
-
-export async function updateCart(_input: AddCartItemRequest): Promise<void> {
-  throw new Error('TODO: 장바구니 수정 API를 연결하세요.')
-}
-
-export async function deleteCart(): Promise<void> {
-  throw new Error('TODO: 장바구니 삭제 API를 연결하세요.')
 }
 
 export async function submitOrderApi(input: OrderCreateInput): Promise<OrderResponseData> {
@@ -61,4 +54,31 @@ export async function getOrderApi(orderId: number): Promise<OrderResponseData> {
     method: 'GET',
   })
   return res.data
+}
+
+export type PaymentConfirmInput = {
+  paymentKey: string
+  orderId: string
+  amount: number
+}
+
+export async function confirmPaymentApi(input: PaymentConfirmInput): Promise<OrderResponseData> {
+  const res = await apiRequest<ApiResponse<OrderResponseData>>('/api/payments/complete', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+  return res.data
+}
+
+export async function failPaymentApi(orderId: string, message?: string): Promise<void> {
+  try {
+    await apiRequest<ApiResponse<string>>(
+      `/api/payments/fail?orderId=${encodeURIComponent(orderId)}&message=${encodeURIComponent(message || '결제 실패')}`,
+      {
+        method: 'POST',
+      },
+    )
+  } catch {
+    // 실패 통지는 최선형 처리
+  }
 }

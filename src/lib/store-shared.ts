@@ -7,11 +7,11 @@ export type StoreMedia = {
 }
 
 export type StoreProduct = {
-  id: number
+  id: string | number
   name: string
   slug: string
   basePrice: number
-  category: 'keyboards' | 'switches' | 'keycaps' | 'housing'
+  category: 'pcb' | 'keyboards' | 'switches' | 'keycaps' | 'housing'
   description: string
   stockQuantity: number
   shippingFee: number
@@ -39,6 +39,19 @@ export type StoreProduct = {
   categoryId?: string
   parentCategoryId?: string
   galleryImages?: string[]
+}
+
+export function isProductSoldOut(product: {
+  isSoldOut?: boolean
+  soldOut?: boolean
+  stockQuantity: number
+  status?: string
+}): boolean {
+  return (
+    Boolean(product.isSoldOut || product.soldOut) ||
+    product.stockQuantity <= 0 ||
+    product.status === 'SOLD_OUT'
+  )
 }
 
 export function mediaFrom(value: StoreProduct['images'][number]): StoreMedia | null {

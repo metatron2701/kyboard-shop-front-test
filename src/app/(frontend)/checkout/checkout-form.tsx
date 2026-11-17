@@ -1,22 +1,24 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useCart } from '@/features/cart/cart-provider'
+import { getCurrentUser } from '@/features/auth/api'
 import { formatPrice } from '@/lib/store-shared'
-<<<<<<< HEAD
-=======
-import { OrderResponseData, submitOrderApi } from './api'
->>>>>>> parent of 8e7c909 (no message)
+import { submitOrderApi } from './api'
+import { useTossWidgets } from '@/features/payments/use-toss-widgets'
+import { mountOrderWidgets } from '@/features/payments/order-widget-rendering'
+import { paymentErrorMessage } from '@/features/payments/payment-request'
 
 export function CheckoutForm() {
   const { selectedItems } = useCart()
   const [message, setMessage] = useState('')
-<<<<<<< HEAD
-=======
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [completedOrder, setCompletedOrder] = useState<OrderResponseData | null>(null)
   const [userEmail, setUserEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [widgetReady, setWidgetReady] = useState(false)
+
+  const tossWidgetsState = useTossWidgets()
+  const { widgets } = tossWidgetsState
 
   useEffect(() => {
     getCurrentUser().then(({ user }) => {
@@ -24,14 +26,104 @@ export function CheckoutForm() {
     })
   }, [])
 
->>>>>>> parent of 8e7c909 (no message)
   const subtotal = selectedItems.reduce((total, item) => total + item.unitPrice * item.quantity, 0)
   const shipping = selectedItems.reduce((total, item) => total + item.shippingFee, 0)
+  const totalAmount = subtotal + shipping
 
-  const submitOrder = (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (!widgets || totalAmount <= 0) return
+    let active = true
+
+    // 위젯에 결제 금액 설정
+    void widgets.setAmount({ currency: 'KRW', value: totalAmount })
+
+    const rendering = mountOrderWidgets(widgets, {
+      payment: '#toss-payment-method',
+      agreement: '#toss-agreement',
+    })
+
+    rendering.ready.then(
+      () => {
+        if (active) setWidgetReady(true)
+      },
+      () => {
+        if (active) setWidgetReady(false)
+      },
+    )
+
+    return () => {
+      active = false
+      void rendering.dispose().catch(() => {})
+    }
+  }, [widgets, totalAmount])
+
+  const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    // TODO(담당 3): 선택 상품과 배송 정보를 주문 API로 제출하고 성공 화면을 표시합니다.
-    setMessage('주문 기능은 아직 연결되지 않았습니다.')
+    if (!selectedItems.length || isSubmitting) return
+
+    setIsSubmitting(true)
+    setMessage('')
+
+    const form = event.currentTarget
+    const formData = new FormData(form)
+
+    const recipientName = String(formData.get('recipientName') || '').trim()
+    const rawPhone = String(formData.get('phone') || '').trim()
+    const email = String(formData.get('email') || userEmail || '').trim()
+
+    const cleanPhone = rawPhone.replace(/[^0-9]/g, '')
+    if (cleanPhone.length < 10) {
+      setMessage('올바른 전화번호를 입력해 주세요. (10~11자리 숫자)')
+      setIsSubmitting(false)
+      return
+    }
+
+    if (!email) {
+      setMessage('주문자 이메일을 입력해 주세요.')
+      setIsSubmitting(false)
+      return
+    }
+
+    try {
+      const items = selectedItems.map((item) => ({
+        productId: Number(item.productId),
+        quantity: item.quantity,
+      }))
+
+      // 1. 백엔드에 PENDING(결제 대기) 상태로 주문서 생성
+      const result = await submitOrderApi({
+        ordererEmail: email,
+        ordererName: recipientName,
+        ordererPhone: cleanPhone,
+        items,
+      })
+
+      if (!widgets || !widgetReady) {
+        setMessage('결제 위젯이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.')
+        setIsSubmitting(false)
+        return
+      }
+
+      // 2. 토스페이먼츠 결제 요청 (결제 완료 시 successUrl, 실패/취소 시 failUrl로 이동)
+      const firstItemName = selectedItems[0]?.name || '주문 상품'
+      const orderName =
+        selectedItems.length > 1
+          ? `${firstItemName} 외 ${selectedItems.length - 1}건`
+          : firstItemName
+
+      await widgets.requestPayment({
+        orderId: result.orderNumber,
+        orderName,
+        customerEmail: email,
+        customerName: recipientName,
+        successUrl: `${window.location.origin}/checkout/success`,
+        failUrl: `${window.location.origin}/checkout/fail`,
+      })
+    } catch (err) {
+      setMessage(paymentErrorMessage(err))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -54,7 +146,22 @@ export function CheckoutForm() {
               className="h-14 w-full rounded-md border border-zinc-300 px-4 outline-none transition focus:border-black"
               inputMode="tel"
               name="phone"
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="01012345678"
               required
+              value={phone}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium">Orderer email</span>
+            <input
+              className="h-14 w-full rounded-md border border-zinc-300 px-4 outline-none transition focus:border-black"
+              name="email"
+              onChange={(e) => setUserEmail(e.target.value)}
+              placeholder="example@email.com"
+              required
+              type="email"
+              value={userEmail}
             />
           </label>
           <label className="block">
@@ -66,7 +173,18 @@ export function CheckoutForm() {
             />
           </label>
         </div>
+
+        {/* 토스페이먼츠 결제 위젯 영역 */}
+        <div className="mt-10 rounded-xl border border-zinc-200 p-6">
+          <h2 className="mb-4 text-lg font-medium">결제 수단 선택</h2>
+          {tossWidgetsState.status === 'error' && (
+            <p className="mb-4 text-sm text-red-600">{tossWidgetsState.message}</p>
+          )}
+          <div id="toss-payment-method" />
+          <div id="toss-agreement" />
+        </div>
       </div>
+
       <aside className="h-fit rounded-xl bg-zinc-100 p-7 lg:sticky lg:top-28">
         <h2 className="text-xl font-medium tracking-[-0.03em]">Order summary</h2>
         <div className="my-6 divide-y divide-zinc-200 border-y border-zinc-200">
@@ -101,20 +219,20 @@ export function CheckoutForm() {
           </div>
           <div className="flex justify-between border-t border-zinc-300 pt-4 text-lg">
             <dt>Total</dt>
-            <dd className="font-semibold">{formatPrice(subtotal + shipping)}</dd>
+            <dd className="font-semibold">{formatPrice(totalAmount)}</dd>
           </div>
         </dl>
         {message && (
-          <p className="mt-5 text-sm text-zinc-700" role="alert">
+          <p className="mt-5 text-sm font-medium text-red-600" role="alert">
             {message}
           </p>
         )}
         <button
           className="mt-7 h-14 w-full rounded-md bg-black text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-30"
-          disabled={!selectedItems.length}
+          disabled={!selectedItems.length || isSubmitting || !widgetReady}
           type="submit"
         >
-          PLACE ORDER
+          {isSubmitting ? '결제 진행 중...' : `${formatPrice(totalAmount)} 결제하기`}
         </button>
       </aside>
     </form>
