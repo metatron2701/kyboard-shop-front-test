@@ -3,10 +3,28 @@
 import { useState, type FormEvent } from 'react'
 import { useCart } from '@/features/cart/cart-provider'
 import { formatPrice } from '@/lib/store-shared'
+<<<<<<< HEAD
+=======
+import { OrderResponseData, submitOrderApi } from './api'
+>>>>>>> parent of 8e7c909 (no message)
 
 export function CheckoutForm() {
   const { selectedItems } = useCart()
   const [message, setMessage] = useState('')
+<<<<<<< HEAD
+=======
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [completedOrder, setCompletedOrder] = useState<OrderResponseData | null>(null)
+  const [userEmail, setUserEmail] = useState('')
+  const [phone, setPhone] = useState('')
+
+  useEffect(() => {
+    getCurrentUser().then(({ user }) => {
+      if (user?.email) setUserEmail(user.email)
+    })
+  }, [])
+
+>>>>>>> parent of 8e7c909 (no message)
   const subtotal = selectedItems.reduce((total, item) => total + item.unitPrice * item.quantity, 0)
   const shipping = selectedItems.reduce((total, item) => total + item.shippingFee, 0)
 
