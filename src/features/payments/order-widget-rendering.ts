@@ -25,7 +25,6 @@ const cleanupFailed = new WeakSet<object>()
 export function renderPaymentWidgets(
   widgets: OrderWidgetRenderer,
   selectors: { payment: string; agreement: string },
-  useCustomAgreement = false,
 ) {
   let disposed = false
   let payment: Widget | undefined
@@ -65,7 +64,7 @@ export function renderPaymentWidgets(
     try {
       // 결제수단을 먼저 표시하고 화면 종료 요청이 없을 때만 약관을 이어서 표시합니다.
       payment = await widgets.renderPaymentMethods({ selector: selectors.payment })
-      if (!disposed && !useCustomAgreement) {
+      if (!disposed) {
         stage = 'agreement'
         agreement = await widgets.renderAgreement({ selector: selectors.agreement })
       }

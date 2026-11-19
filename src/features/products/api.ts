@@ -2,13 +2,29 @@ import { apiRequest } from '@/lib/api-client'
 import type { StoreProduct } from '@/lib/store-shared'
 import type { Category, GetProductsParams, ProductListResponse } from './types'
 
+type ProductApiEnvelope<T> = {
+  success?: boolean
+  message?: string | null
+  data?: T
+}
+
+// 백엔드 ApiResponse({ success, message, data }) 래핑과 비래핑 JSON을 모두 지원합니다.
+async function productRequest<T>(path: string): Promise<T> {
+  const result = await apiRequest<T | ProductApiEnvelope<T>>(path)
+  if (result && typeof result === 'object' && !Array.isArray(result) && 'success' in result) {
+    if (result.success !== true) {
+      throw new Error(result.message || '상품 정보를 불러올 수 없습니다.')
+    }
+    return result.data as T
+  }
+  return result as T
+}
+
 /**
  * 카테고리 목록 조회 (Spring Boot /api/categories 직접 호출)
  */
 export async function getCategories(): Promise<Category[]> {
-  const res = await apiRequest<{ success: boolean; data: Category[] } | Category[]>('/api/categories')
-  if (res && 'data' in res && Array.isArray(res.data)) return res.data
-  return Array.isArray(res) ? res : []
+  return await productRequest<Category[]>('/api/categories')
 }
 
 /**
@@ -24,41 +40,7 @@ export async function getPaginatedProducts(
   if (params.size !== undefined) search.set('size', String(params.size))
 
   const queryString = search.toString() ? `?${search.toString()}` : ''
-  const res = await apiRequest<any>(`/api/products${queryString}`)
-
-  // Spring Boot ApiResponse wrapper({ success, data }) 해제
-  const payload = (res && typeof res === 'object' && 'data' in res && res.data) ? res.data : res
-
-  // 만약 배열 형태로 넘어왔을 경우
-  if (Array.isArray(payload)) {
-    return {
-      content: payload,
-      pageNumber: params.page ?? 0,
-      pageSize: params.size ?? payload.length,
-      totalElements: payload.length,
-      totalPages: 1,
-    }
-  }
-
-  // Page 또는 ProductListResponseDto 형태인 경우
-  if (payload && typeof payload === 'object') {
-    const content = Array.isArray(payload.content) ? payload.content : []
-    return {
-      content,
-      pageNumber: typeof payload.pageNumber === 'number' ? payload.pageNumber : (params.page ?? 0),
-      pageSize: typeof payload.pageSize === 'number' ? payload.pageSize : (params.size ?? 16),
-      totalElements: typeof payload.totalElements === 'number' ? payload.totalElements : content.length,
-      totalPages: typeof payload.totalPages === 'number' ? payload.totalPages : 1,
-    }
-  }
-
-  return {
-    content: [],
-    pageNumber: 0,
-    pageSize: 16,
-    totalElements: 0,
-    totalPages: 1,
-  }
+  return await productRequest<ProductListResponse>(`/api/products${queryString}`)
 }
 
 /**
@@ -74,7 +56,7 @@ export async function getProducts(
 
   const category = categoryOrParams as StoreProduct['category'] | undefined
   const query = category ? `?category=${category}` : ''
-  const result = await apiRequest<StoreProduct[] | ProductListResponse>(`/api/products${query}`)
+  const result = await productRequest<StoreProduct[] | ProductListResponse>(`/api/products${query}`)
   if (Array.isArray(result)) return result
   if (result && Array.isArray(result.content)) return result.content
   throw new Error('백엔드 상품 목록 응답 형식이 올바르지 않습니다.')
@@ -85,11 +67,7 @@ export async function getProducts(
  */
 export async function getProductById(productId: string | number): Promise<StoreProduct> {
   const idStr = String(productId)
-  const res = await apiRequest<{ success: boolean; data: StoreProduct } | StoreProduct>(
-    `/api/products/${encodeURIComponent(idStr)}`,
-  )
-  if (res && 'data' in res && res.data) return res.data
-  return res as StoreProduct
+  return await productRequest<StoreProduct>(`/api/products/${encodeURIComponent(idStr)}`)
 }
 
 /**

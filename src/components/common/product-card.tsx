@@ -9,7 +9,7 @@ export function ProductCard({
   product: StoreProduct
   priority?: boolean
 }) {
-  const image = mediaFrom(product?.images?.[0])
+  const image = mediaFrom(product.images[0])
   const isSoldOut = isProductSoldOut(product)
 
   return (

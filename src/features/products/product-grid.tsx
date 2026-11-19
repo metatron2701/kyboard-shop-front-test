@@ -39,10 +39,9 @@ export function ProductGrid() {
     })
       .then((res) => {
         if (!ignore) {
-          const items = Array.isArray(res?.content) ? res.content : []
-          setProducts(items)
-          setTotalPages(typeof res?.totalPages === 'number' ? res.totalPages : 1)
-          setTotalElements(typeof res?.totalElements === 'number' ? res.totalElements : items.length)
+          setProducts(res.content)
+          setTotalPages(res.totalPages)
+          setTotalElements(res.totalElements)
         }
       })
       .catch((err) => {
@@ -115,15 +114,15 @@ export function ProductGrid() {
         <BackendErrorState
           message={error}
           onRetry={() => setRetryCount((prev) => prev + 1)}
-          title="상품 목록을 백엔드/DB에서 불러오지 못했습니다"
+          title="상품 목록을 불러오지 못했습니다"
         />
-      ) : !products || products.length === 0 ? (
+      ) : products.length === 0 ? (
         <div className="rounded-xl border border-dashed border-zinc-300 py-24 text-center text-zinc-500">
           해당 조건에 등록된 상품이 없습니다.
         </div>
       ) : (
         <div className="grid grid-cols-4 gap-4 max-lg:grid-cols-2 max-sm:grid-cols-1">
-          {(products ?? []).map((product, idx) => (
+          {products.map((product, idx) => (
             <ProductCard key={product.id} priority={idx < 4} product={product} />
           ))}
         </div>
