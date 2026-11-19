@@ -15,12 +15,13 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
   const { addItem } = useCart()
 
   // 갤러리 이미지 세트 (images 우선, 비어 있을 경우 galleryImages fallback)
-  const rawImages = product.images.length
-    ? product.images.map(mediaFrom).filter((image) => Boolean(image?.url))
-    : (product.galleryImages || []).map((url, index) => ({
+  const productImages = Array.isArray(product?.images) ? product.images : []
+  const rawImages = productImages.length
+    ? productImages.map(mediaFrom).filter((image) => Boolean(image?.url))
+    : (product?.galleryImages || []).map((url, index) => ({
         id: index + 1,
         url,
-        alt: product.name,
+        alt: product?.name || '상품',
       }))
 
   const images = rawImages.map((image, index) => ({

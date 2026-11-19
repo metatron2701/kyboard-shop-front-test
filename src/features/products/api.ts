@@ -24,11 +24,41 @@ export async function getPaginatedProducts(
   if (params.size !== undefined) search.set('size', String(params.size))
 
   const queryString = search.toString() ? `?${search.toString()}` : ''
-  const res = await apiRequest<{ success: boolean; data: ProductListResponse } | ProductListResponse>(
-    `/api/products${queryString}`,
-  )
-  if (res && 'data' in res && res.data) return res.data
-  return res as ProductListResponse
+  const res = await apiRequest<any>(`/api/products${queryString}`)
+
+  // Spring Boot ApiResponse wrapper({ success, data }) 해제
+  const payload = (res && typeof res === 'object' && 'data' in res && res.data) ? res.data : res
+
+  // 만약 배열 형태로 넘어왔을 경우
+  if (Array.isArray(payload)) {
+    return {
+      content: payload,
+      pageNumber: params.page ?? 0,
+      pageSize: params.size ?? payload.length,
+      totalElements: payload.length,
+      totalPages: 1,
+    }
+  }
+
+  // Page 또는 ProductListResponseDto 형태인 경우
+  if (payload && typeof payload === 'object') {
+    const content = Array.isArray(payload.content) ? payload.content : []
+    return {
+      content,
+      pageNumber: typeof payload.pageNumber === 'number' ? payload.pageNumber : (params.page ?? 0),
+      pageSize: typeof payload.pageSize === 'number' ? payload.pageSize : (params.size ?? 16),
+      totalElements: typeof payload.totalElements === 'number' ? payload.totalElements : content.length,
+      totalPages: typeof payload.totalPages === 'number' ? payload.totalPages : 1,
+    }
+  }
+
+  return {
+    content: [],
+    pageNumber: 0,
+    pageSize: 16,
+    totalElements: 0,
+    totalPages: 1,
+  }
 }
 
 /**
