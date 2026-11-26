@@ -64,6 +64,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    setNavVisible(true);
     if (!pathname.startsWith("/products/")) return;
     let previous = window.scrollY;
     const onScroll = () => {
@@ -165,7 +166,7 @@ export function StoreShell({ children }: { children: ReactNode }) {
   return (
     <>
       <SiteHeader
-        cartCount={cartCount}
+        cartCount={products.length}
         onOpenAccount={openAccount}
         onOpenCart={() => {
           setAuthOpen(false);
@@ -185,6 +186,19 @@ export function StoreShell({ children }: { children: ReactNode }) {
             setAuthError("");
             closeCart();
             clearCart();
+          },
+          updateUser: (user) => {
+            setAuthUser(user);
+          },
+          signOutAfterPasswordChange: () => {
+            setAuthUser(null);
+            setSessionVersion(v => v + 1);
+            // 로그아웃과 같이 화면의 장바구니만 비웁니다. (clearCart는 서버 장바구니까지 삭제)
+            setProducts([]);
+            closeCart();
+            setAuthError("");
+            setAuthMode("login");
+            setAuthOpen(true);
           },
         } : null}>
           {children}
