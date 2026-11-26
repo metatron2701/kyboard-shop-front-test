@@ -36,9 +36,14 @@ export function renderPaymentWidgets(
     const previous = queues.get(widgets) ?? Promise.resolve()
     const next = previous.catch(() => {}).then(action)
     // 대기열은 계속 이어지도록 유지하되 실제 작업의 오류는 호출한 쪽에 전달합니다.
-    const tail = next.then(() => {}, () => {})
+    const tail = next.then(
+      () => {},
+      () => {},
+    )
     queues.set(widgets, tail)
-    void tail.then(() => { if (queues.get(widgets) === tail) queues.delete(widgets) })
+    void tail.then(() => {
+      if (queues.get(widgets) === tail) queues.delete(widgets)
+    })
     return next
   }
 
@@ -49,7 +54,11 @@ export function renderPaymentWidgets(
     payment = undefined
     let failed = false
     for (const handle of handles) {
-      try { await handle?.destroy() } catch { failed = true }
+      try {
+        await handle?.destroy()
+      } catch {
+        failed = true
+      }
     }
     if (failed) {
       cleanupFailed.add(widgets)
@@ -83,7 +92,7 @@ export function renderPaymentWidgets(
     // 여러 번 정리 요청을 받아도 하나의 정리 작업만 실행합니다.
     dispose() {
       disposed = true
-      return disposal ??= enqueue(cleanup)
+      return (disposal ??= enqueue(cleanup))
     },
   }
 }

@@ -31,7 +31,8 @@ const terms = [
   {
     name: 'privacyPolicy',
     label: '개인정보 수집·이용',
-    description: '이메일, 이름, 연락처, 배송지는 회원 관리와 주문 배송에 사용됩니다. 비밀번호는 해시로 저장됩니다.',
+    description:
+      '이메일, 이름, 연락처, 배송지는 회원 관리와 주문 배송에 사용됩니다. 비밀번호는 해시로 저장됩니다.',
   },
 ] as const
 
@@ -136,7 +137,9 @@ export default function SignupPage() {
   const passwordValid = validPassword(password)
   const phoneValid = phonePattern.test(phone)
 
-  const hasRequiredFields = Boolean(name.trim() && postalCode.trim() && address.trim() && detail.trim())
+  const hasRequiredFields = Boolean(
+    name.trim() && postalCode.trim() && address.trim() && detail.trim(),
+  )
   const canSubmit =
     available &&
     passwordValid &&
@@ -371,7 +374,10 @@ export default function SignupPage() {
       </div>
 
       {/* 가입 폼 */}
-      <form className="space-y-5 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-9" onSubmit={submitSignup}>
+      <form
+        className="space-y-5 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-9"
+        onSubmit={submitSignup}
+      >
         {/* 이메일 입력 및 중복 확인 */}
         <label className="block text-sm font-medium text-zinc-800">
           이메일 *
@@ -393,7 +399,11 @@ export default function SignupPage() {
             type="email"
             value={email}
           />
-          <span className={`mt-1 block text-xs ${emailFeedback.color}`} id="signup-email-feedback" role="status">
+          <span
+            className={`mt-1 block text-xs ${emailFeedback.color}`}
+            id="signup-email-feedback"
+            role="status"
+          >
             {emailFeedback.text}
           </span>
         </label>
@@ -417,14 +427,20 @@ export default function SignupPage() {
             type="password"
             value={password}
           />
-          <span className={`mt-1 block text-xs ${passwordFeedback.color}`} id="signup-password-feedback">
+          <span
+            className={`mt-1 block text-xs ${passwordFeedback.color}`}
+            id="signup-password-feedback"
+          >
             {passwordFeedback.text}
           </span>
         </label>
 
         {/* 비밀번호 확인 */}
         <div>
-          <label className="block text-sm font-medium text-zinc-800" htmlFor="signup-password-confirm">
+          <label
+            className="block text-sm font-medium text-zinc-800"
+            htmlFor="signup-password-confirm"
+          >
             비밀번호 확인 *
           </label>
           <input
@@ -452,7 +468,11 @@ export default function SignupPage() {
             type="password"
             value={passwordConfirm}
           />
-          <p className={`mt-1 text-xs ${passwordConfirmFeedback.color}`} id="signup-password-confirm-feedback" role="status">
+          <p
+            className={`mt-1 text-xs ${passwordConfirmFeedback.color}`}
+            id="signup-password-confirm-feedback"
+            role="status"
+          >
             {passwordConfirmFeedback.text}
           </p>
         </div>
@@ -512,7 +532,12 @@ export default function SignupPage() {
               required
               value={postalCode}
             />
-            <button aria-haspopup="dialog" className={outlineButton} onClick={searchAddress} type="button">
+            <button
+              aria-haspopup="dialog"
+              className={outlineButton}
+              onClick={searchAddress}
+              type="button"
+            >
               주소 검색
             </button>
           </div>
@@ -542,7 +567,12 @@ export default function SignupPage() {
             {detailAddressFeedback.text}
           </span>
           {ADDRESS_ERROR_FIELDS.filter((f) => f !== 'defaultAddress.detailAddress').map(
-            (field) => fields?.[field] && <p className="text-xs text-red-700" key={field}>{fields[field]}</p>,
+            (field) =>
+              fields?.[field] && (
+                <p className="text-xs text-red-700" key={field}>
+                  {fields[field]}
+                </p>
+              ),
           )}
         </fieldset>
 
@@ -564,9 +594,7 @@ export default function SignupPage() {
                   type="checkbox"
                 />
                 {label} (필수)
-                {!termsConsent[name] &&
-                  <span className="text-xs text-red-700">체크해 주세요</span>
-                }
+                {!termsConsent[name] && <span className="text-xs text-red-700">체크해 주세요</span>}
               </label>
               <details className="pl-6 text-xs leading-5 text-zinc-600">
                 <summary className="cursor-pointer">{label} 내용 보기</summary>
@@ -596,7 +624,10 @@ export default function SignupPage() {
         {/* 로그인 링크 */}
         <p className="text-center text-sm text-zinc-500">
           이미 계정이 있으신가요?{' '}
-          <Link className="font-semibold text-zinc-900 underline underline-offset-4" href="/?login=1">
+          <Link
+            className="font-semibold text-zinc-900 underline underline-offset-4"
+            href="/?login=1"
+          >
             스토어에서 로그인
           </Link>
         </p>
@@ -604,7 +635,10 @@ export default function SignupPage() {
 
       {/* 스토어 복귀 링크 */}
       <div className="mt-7 text-center">
-        <Link className="text-xs font-medium tracking-[0.1em] text-zinc-500 hover:text-black" href="/">
+        <Link
+          className="text-xs font-medium tracking-[0.1em] text-zinc-500 hover:text-black"
+          href="/"
+        >
           ← BACK TO STORE
         </Link>
       </div>
@@ -620,10 +654,18 @@ export default function SignupPage() {
         ref={postcodeDialog}
       >
         <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-xl font-medium" id="signup-postcode-title">주소 검색</h2>
-          <button className={outlineButton} onClick={closeAddressSearch} type="button">닫기</button>
+          <h2 className="text-xl font-medium" id="signup-postcode-title">
+            주소 검색
+          </h2>
+          <button className={outlineButton} onClick={closeAddressSearch} type="button">
+            닫기
+          </button>
         </div>
-        {postcodeMessage && <p className="text-sm text-zinc-700" role="status">{postcodeMessage}</p>}
+        {postcodeMessage && (
+          <p className="text-sm text-zinc-700" role="status">
+            {postcodeMessage}
+          </p>
+        )}
         <div className="h-[min(55vh,440px)]" ref={postcodeHost} />
       </dialog>
 
@@ -634,7 +676,9 @@ export default function SignupPage() {
         onCancel={(event) => event.preventDefault()}
         ref={successDialog}
       >
-        <h2 className="text-xl font-medium" id="signup-success">회원가입이 완료되었습니다.</h2>
+        <h2 className="text-xl font-medium" id="signup-success">
+          회원가입이 완료되었습니다.
+        </h2>
         <button
           className="mt-5 h-12 rounded-md bg-zinc-950 px-6 text-sm font-semibold text-white transition hover:bg-zinc-800"
           onClick={() => router.replace('/?login=1')}

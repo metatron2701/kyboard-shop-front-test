@@ -2,7 +2,14 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from 'react'
 import { CloseIcon } from '@/components/icons'
 import type { ApiUser } from '@/features/auth/api'
 import { getPaginatedProducts, getSearchSuggestions } from '@/features/products/api'
@@ -11,15 +18,7 @@ import { formatPrice, mediaFrom, type StoreProduct } from '@/lib/store-shared'
 const RECENT_SEARCH_KEY = 'monokeys_recent_searches'
 
 function highlightMatches(text: string, query: string): ReactNode {
-  const tokens = Array.from(
-    new Set(
-      query
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 5),
-    ),
-  )
+  const tokens = Array.from(new Set(query.trim().split(/\s+/).filter(Boolean).slice(0, 5)))
   if (tokens.length === 0 || !text) return text
   const escaped = tokens.map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   const regex = new RegExp(`(${escaped.join('|')})`, 'gi')
@@ -132,7 +131,9 @@ export function SiteHeader({
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed)) {
         setRecentKeywords(
-          parsed.filter((item): item is string => typeof item === 'string' && Boolean(item.trim())).slice(0, 6),
+          parsed
+            .filter((item): item is string => typeof item === 'string' && Boolean(item.trim()))
+            .slice(0, 6),
         )
       }
     } catch {
@@ -144,7 +145,10 @@ export function SiteHeader({
     const clean = keyword.trim()
     if (!clean) return
     setRecentKeywords((prev) => {
-      const next = [clean, ...prev.filter((item) => item.toLowerCase() !== clean.toLowerCase())].slice(0, 6)
+      const next = [
+        clean,
+        ...prev.filter((item) => item.toLowerCase() !== clean.toLowerCase()),
+      ].slice(0, 6)
       try {
         window.localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(next))
       } catch {
@@ -282,7 +286,8 @@ export function SiteHeader({
     }
   }
 
-  const button_interaction = "cursor-pointer origin-center transition-transform duration-300 hover:scale-[1.08]"
+  const button_interaction =
+    'cursor-pointer origin-center transition-transform duration-300 hover:scale-[1.08]'
 
   return (
     <>
@@ -303,13 +308,25 @@ export function SiteHeader({
             aria-label="Utility navigation"
             className="absolute right-0 top-[18px] flex items-center gap-3 text-[10px] font-medium tracking-[-0.01em] text-[#34264b] sm:gap-5 sm:text-[12px] lg:gap-7 lg:text-[15px]"
           >
-            <button className={`whitespace-nowrap ${button_interaction}`} onClick={() => setSearchOpen(true)} type="button">
+            <button
+              className={`whitespace-nowrap ${button_interaction}`}
+              onClick={() => setSearchOpen(true)}
+              type="button"
+            >
               SEARCH
             </button>
-            <button className={`whitespace-nowrap ${button_interaction}`} onClick={onOpenCart} type="button">
+            <button
+              className={`whitespace-nowrap ${button_interaction}`}
+              onClick={onOpenCart}
+              type="button"
+            >
               CART <span aria-label={`${cartCount} items`}>({cartCount})</span>
             </button>
-            <button className={`whitespace-nowrap ${button_interaction}`} onClick={onOpenAccount} type="button">
+            <button
+              className={`whitespace-nowrap ${button_interaction}`}
+              onClick={onOpenAccount}
+              type="button"
+            >
               {user ? (user.role === 'admin' ? 'ADMIN' : 'MYPAGE') : 'LOGIN'}
             </button>
           </nav>
@@ -490,9 +507,7 @@ export function SiteHeader({
                   </p>
                 ) : previewError ? (
                   <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-5 py-8 text-center">
-                    <p className="text-sm text-zinc-600">
-                      상품 목록을 바로 불러오지 못했습니다.
-                    </p>
+                    <p className="text-sm text-zinc-600">상품 목록을 바로 불러오지 못했습니다.</p>
                     <button
                       className="mt-3 rounded-md bg-zinc-950 px-4 py-2 text-xs font-semibold text-white"
                       onClick={() => executeSearch(query)}

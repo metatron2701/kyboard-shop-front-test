@@ -1,24 +1,26 @@
 import { ApiRequestError, apiRequest } from '@/lib/api-client'
 import type { ProductType } from './interface/Product'
 
-export type AddCartTarget = number | { productId?: number; manualBuildId?: number; autoBuildId?: number; customDesignData?: string }
+export type AddCartTarget =
+  | number
+  | { productId?: number; manualBuildId?: number; autoBuildId?: number; customDesignData?: string }
 
 function parseCustomDesignMeta(customDesignData?: string): {
-  previewUrl?: string; // 장바구니에 보여줄 캔버스 미리보기 이미지
-  label?: string;      // 장바구니에 보여줄 옵션 요약 글자
+  previewUrl?: string // 장바구니에 보여줄 캔버스 미리보기 이미지
+  label?: string // 장바구니에 보여줄 옵션 요약 글자
 } {
-  if (!customDesignData) return {};
+  if (!customDesignData) return {}
   try {
-    const parsed = JSON.parse(customDesignData);
+    const parsed = JSON.parse(customDesignData)
     // 1. 캔버스 미리보기 이미지 추출 (없으면 원본 인쇄 이미지)
-    const previewUrl = parsed.previewImageUrl || parsed.printImageUrl || undefined;
+    const previewUrl = parsed.previewImageUrl || parsed.printImageUrl || undefined
     // 2. 키캡 종류와 크기, 문구 조합 (예: Space Bar · 6.25u · "HELLO")
-    const spec = [parsed.keyType, parsed.keySize].filter(Boolean).join(' · ');
-    const textSnippet = parsed.customText ? ` · "${parsed.customText}"` : '';
-    const label = spec ? `커스텀 (${spec})${textSnippet}` : '커스텀 디자인';
-    return { previewUrl, label };
+    const spec = [parsed.keyType, parsed.keySize].filter(Boolean).join(' · ')
+    const textSnippet = parsed.customText ? ` · "${parsed.customText}"` : ''
+    const label = spec ? `커스텀 (${spec})${textSnippet}` : '커스텀 디자인'
+    return { previewUrl, label }
   } catch {
-    return {};
+    return {}
   }
 }
 
@@ -30,8 +32,8 @@ export async function getCartApi(): Promise<ProductType[]> {
     if (!Array.isArray(list)) return []
 
     return list.map((item: any) => {
-      const customMeta = parseCustomDesignMeta(item.customDesignData);
-      
+      const customMeta = parseCustomDesignMeta(item.customDesignData)
+
       return {
         cartItemId: item.cartItemId,
         manualBuildId: item.manualBuildId,
@@ -64,14 +66,13 @@ export async function getCartApi(): Promise<ProductType[]> {
 // 2. 장바구니에 상품 담기 (POST /api/cart)
 export async function addCartItemApi(target: AddCartTarget, quantity: number): Promise<boolean> {
   try {
-    const body = typeof target === 'number' 
-      ? { productId: target, quantity } 
-      : { ...target, quantity };
+    const body =
+      typeof target === 'number' ? { productId: target, quantity } : { ...target, quantity }
     await apiRequest('/api/cart', {
       method: 'POST',
       body: JSON.stringify(body), // { productId, quantity, customDesignData }
-    });
-    return true;
+    })
+    return true
   } catch (error) {
     if (error instanceof ApiRequestError) {
       alert(error.status === 401 ? '로그인이 필요한 서비스입니다.' : error.message)

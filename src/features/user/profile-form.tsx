@@ -52,9 +52,11 @@ function validate(values: ProfileValues) {
   if (!values.name.trim()) return '이름을 입력해 주세요.'
   if (values.name.length > 50) return '이름은 50자 이하로 입력해 주세요.'
   if (!phonePattern.test(values.phoneNumber)) return '010으로 시작하는 11자리 번호를 입력해 주세요.'
-  if (!postalPattern.test(values.postalCode) || !values.address.trim()) return '주소 검색으로 기본 배송지를 선택해 주세요.'
+  if (!postalPattern.test(values.postalCode) || !values.address.trim())
+    return '주소 검색으로 기본 배송지를 선택해 주세요.'
   if (!values.detailAddress.trim()) return '상세 주소를 입력해 주세요.'
-  if (values.address.length > 255 || values.detailAddress.length > 255) return '주소는 255자 이하로 입력해 주세요.'
+  if (values.address.length > 255 || values.detailAddress.length > 255)
+    return '주소는 255자 이하로 입력해 주세요.'
   return ''
 }
 
@@ -78,27 +80,44 @@ export function ProfileForm({ session }: { session: WithdrawalSession }) {
     void getCurrentUser()
       .then(({ user }) => {
         if (!active) return
-        if (!user) { setLoadError(true); return }
+        if (!user) {
+          setLoadError(true)
+          return
+        }
         setEmail(user.email)
         setSaved(toValues(user))
         setValues(toValues(user))
       })
-      .catch(() => { if (active) setLoadError(true) })
-    return () => { active = false }
+      .catch(() => {
+        if (active) setLoadError(true)
+      })
+    return () => {
+      active = false
+    }
   }, [])
 
   if (loadError) {
     return (
       <div className={cardClass}>
-        <p role="alert" className="text-sm text-zinc-600">회원 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.</p>
+        <p role="alert" className="text-sm text-zinc-600">
+          회원 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.
+        </p>
       </div>
     )
   }
   if (!values || !saved) {
-    return <div className={cardClass}><p role="status" className="text-sm text-zinc-600">회원 정보를 불러오고 있어요.</p></div>
+    return (
+      <div className={cardClass}>
+        <p role="status" className="text-sm text-zinc-600">
+          회원 정보를 불러오고 있어요.
+        </p>
+      </div>
+    )
   }
 
-  const changed = (Object.keys(values) as Array<keyof ProfileValues>).some((key) => values[key] !== saved[key])
+  const changed = (Object.keys(values) as Array<keyof ProfileValues>).some(
+    (key) => values[key] !== saved[key],
+  )
 
   function update(key: keyof ProfileValues, value: string) {
     setValues((current) => current && { ...current, [key]: value })
@@ -138,7 +157,9 @@ export function ProfileForm({ session }: { session: WithdrawalSession }) {
             setPostcodeMessage('도로명 주소가 포함된 검색 결과를 선택해 주세요.')
             return
           }
-          setValues((v) => v && { ...v, postalCode: zonecode, address: roadAddress, detailAddress: '' })
+          setValues(
+            (v) => v && { ...v, postalCode: zonecode, address: roadAddress, detailAddress: '' },
+          )
           setMessage(null)
           closeAddressSearch()
           detailInput.current?.focus()
@@ -153,7 +174,10 @@ export function ProfileForm({ session }: { session: WithdrawalSession }) {
     event.preventDefault()
     if (!values || !changed || pending) return
     const error = validate(values)
-    if (error) { setMessage({ type: 'error', text: error }); return }
+    if (error) {
+      setMessage({ type: 'error', text: error })
+      return
+    }
 
     setPending(true)
     setMessage(null)
@@ -172,9 +196,12 @@ export function ProfileForm({ session }: { session: WithdrawalSession }) {
       setMessage({ type: 'success', text: '회원정보가 수정되었습니다.' })
     } catch (error) {
       // 실패하면 입력값은 그대로 두고 서버 메시지를 보여 줍니다.
-      const text = error instanceof ApiRequestError && error.status === 401
-        ? '로그인 정보를 다시 확인해 주세요.'
-        : error instanceof Error && error.message ? error.message : '회원정보를 수정하지 못했습니다.'
+      const text =
+        error instanceof ApiRequestError && error.status === 401
+          ? '로그인 정보를 다시 확인해 주세요.'
+          : error instanceof Error && error.message
+            ? error.message
+            : '회원정보를 수정하지 못했습니다.'
       setMessage({ type: 'error', text })
     } finally {
       setPending(false)
@@ -188,39 +215,81 @@ export function ProfileForm({ session }: { session: WithdrawalSession }) {
 
         <label className="block text-sm font-medium text-zinc-800">
           이메일
-          <input className={inputClass} value={email} readOnly aria-describedby="profile-email-help" />
-          <span id="profile-email-help" className="mt-1 block text-xs text-zinc-500">로그인에 사용하는 이메일은 변경할 수 없습니다.</span>
+          <input
+            className={inputClass}
+            value={email}
+            readOnly
+            aria-describedby="profile-email-help"
+          />
+          <span id="profile-email-help" className="mt-1 block text-xs text-zinc-500">
+            로그인에 사용하는 이메일은 변경할 수 없습니다.
+          </span>
         </label>
 
         <label className="block text-sm font-medium text-zinc-800">
           이름
-          <input className={inputClass} maxLength={50} autoComplete="name" value={values.name}
-            onChange={(e) => update('name', e.target.value)} />
+          <input
+            className={inputClass}
+            maxLength={50}
+            autoComplete="name"
+            value={values.name}
+            onChange={(e) => update('name', e.target.value)}
+          />
         </label>
 
         <label className="block text-sm font-medium text-zinc-800">
           연락처
-          <input className={inputClass} inputMode="numeric" autoComplete="tel" placeholder="010-0000-0000"
+          <input
+            className={inputClass}
+            inputMode="numeric"
+            autoComplete="tel"
+            placeholder="010-0000-0000"
             value={formatPhone(values.phoneNumber)}
-            onChange={(e) => update('phoneNumber', e.target.value.replace(/[^0-9]/g, '').slice(0, 11))} />
+            onChange={(e) =>
+              update('phoneNumber', e.target.value.replace(/[^0-9]/g, '').slice(0, 11))
+            }
+          />
         </label>
 
         <fieldset className="space-y-3">
           <legend className="text-sm font-medium text-zinc-800">기본 배송지</legend>
           <div className="flex gap-2">
-            <input aria-label="우편번호" className={`${inputClass} mt-0 max-w-36`} value={values.postalCode} readOnly />
-            <button className={outlineButton} onClick={searchAddress} type="button">주소 검색</button>
+            <input
+              aria-label="우편번호"
+              className={`${inputClass} mt-0 max-w-36`}
+              value={values.postalCode}
+              readOnly
+            />
+            <button className={outlineButton} onClick={searchAddress} type="button">
+              주소 검색
+            </button>
           </div>
-          <input aria-label="기본 주소" className={`${inputClass} mt-0`} value={values.address} readOnly />
-          <input aria-label="상세 주소" ref={detailInput} className={`${inputClass} mt-0`} maxLength={255}
-            autoComplete="address-line2" placeholder="상세 주소 (동·호수 등)" value={values.detailAddress}
-            onChange={(e) => update('detailAddress', e.target.value)} />
-          <p className="text-xs leading-5 text-zinc-500">이름·연락처를 바꾸면 기본 배송지의 받는 사람 이름·연락처에도 함께 적용됩니다.</p>
+          <input
+            aria-label="기본 주소"
+            className={`${inputClass} mt-0`}
+            value={values.address}
+            readOnly
+          />
+          <input
+            aria-label="상세 주소"
+            ref={detailInput}
+            className={`${inputClass} mt-0`}
+            maxLength={255}
+            autoComplete="address-line2"
+            placeholder="상세 주소 (동·호수 등)"
+            value={values.detailAddress}
+            onChange={(e) => update('detailAddress', e.target.value)}
+          />
+          <p className="text-xs leading-5 text-zinc-500">
+            이름·연락처를 바꾸면 기본 배송지의 받는 사람 이름·연락처에도 함께 적용됩니다.
+          </p>
         </fieldset>
 
         {message && (
-          <p role={message.type === 'error' ? 'alert' : 'status'}
-            className={`rounded-md px-4 py-3 text-sm leading-6 ${message.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-zinc-100 text-zinc-800'}`}>
+          <p
+            role={message.type === 'error' ? 'alert' : 'status'}
+            className={`rounded-md px-4 py-3 text-sm leading-6 ${message.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-zinc-100 text-zinc-800'}`}
+          >
             {message.text}
           </p>
         )}
@@ -230,13 +299,28 @@ export function ProfileForm({ session }: { session: WithdrawalSession }) {
         </button>
       </form>
 
-      <dialog aria-labelledby="profile-postcode-title" className={dialogClass} ref={postcodeDialog}
-        onCancel={(event) => { event.preventDefault(); closeAddressSearch() }}>
+      <dialog
+        aria-labelledby="profile-postcode-title"
+        className={dialogClass}
+        ref={postcodeDialog}
+        onCancel={(event) => {
+          event.preventDefault()
+          closeAddressSearch()
+        }}
+      >
         <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-xl font-medium" id="profile-postcode-title">주소 검색</h2>
-          <button className={outlineButton} onClick={closeAddressSearch} type="button">닫기</button>
+          <h2 className="text-xl font-medium" id="profile-postcode-title">
+            주소 검색
+          </h2>
+          <button className={outlineButton} onClick={closeAddressSearch} type="button">
+            닫기
+          </button>
         </div>
-        {postcodeMessage && <p className="text-sm text-zinc-700" role="status">{postcodeMessage}</p>}
+        {postcodeMessage && (
+          <p className="text-sm text-zinc-700" role="status">
+            {postcodeMessage}
+          </p>
+        )}
         <div className="h-[min(55vh,440px)]" ref={postcodeHost} />
       </dialog>
     </>

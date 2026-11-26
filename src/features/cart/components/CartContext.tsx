@@ -1,5 +1,5 @@
-"use client";
+'use client'
 
-import { createContext } from "react";
+import { createContext } from 'react'
 
-export const ProductCartContext = createContext(null as any);
+export const ProductCartContext = createContext(null as any)

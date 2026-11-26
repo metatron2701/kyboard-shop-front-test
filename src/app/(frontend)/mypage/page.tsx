@@ -27,23 +27,40 @@ export default function MyPage() {
 
   return (
     <section className="mx-auto w-[min(92%,560px)] py-14 sm:py-20">
-      <h1 className="mb-8 text-center text-4xl font-medium tracking-[-0.06em] sm:text-5xl">마이페이지</h1>
+      <h1 className="mb-8 text-center text-4xl font-medium tracking-[-0.06em] sm:text-5xl">
+        마이페이지
+      </h1>
       {session ? (
         <>
           <p className="mb-6 break-words text-center text-sm">
-            {name ? <><strong className="font-bold">{name}</strong> 회원님, 안녕하세요.</> : '회원님, 안녕하세요.'}
+            {name ? (
+              <>
+                <strong className="font-bold">{name}</strong> 회원님, 안녕하세요.
+              </>
+            ) : (
+              '회원님, 안녕하세요.'
+            )}
           </p>
           <nav aria-label="마이페이지 메뉴" className="grid gap-4">
             {/* 각 링크를 같은 크기의 독립된 박스로 표시하고, 밑줄은 글자에 마우스를 올리거나 키보드로 링크에 접근할 때 표시합니다. */}
-            {accountMenus.map(({ href, label }) => href ? (
-              <Link key={label} href={href} className={`group ${menuItemClass}`}>
-                <span className="underline-offset-4 hover:underline group-focus-visible:underline">{label}</span>
-              </Link>
-            ) : (
-              <button key={label} type="button" disabled className={`${menuItemClass} cursor-not-allowed text-zinc-500`}>
-                {label}
-              </button>
-            ))}
+            {accountMenus.map(({ href, label }) =>
+              href ? (
+                <Link key={label} href={href} className={`group ${menuItemClass}`}>
+                  <span className="underline-offset-4 hover:underline group-focus-visible:underline">
+                    {label}
+                  </span>
+                </Link>
+              ) : (
+                <button
+                  key={label}
+                  type="button"
+                  disabled
+                  className={`${menuItemClass} cursor-not-allowed text-zinc-500`}
+                >
+                  {label}
+                </button>
+              ),
+            )}
           </nav>
         </>
       ) : (
@@ -67,16 +84,26 @@ function AccountSessionNotice() {
       .catch(() => {
         if (active) setStatus('error')
       })
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [])
 
   return (
     <div className={menuBoxClass}>
-      {status === 'loading' && <p role="status" className="text-sm text-zinc-600">회원 정보를 확인하고 있어요.</p>}
+      {status === 'loading' && (
+        <p role="status" className="text-sm text-zinc-600">
+          회원 정보를 확인하고 있어요.
+        </p>
+      )}
       {status === 'error' && (
         <div className="space-y-2 text-sm text-zinc-600">
           <p role="alert">회원 정보를 확인하지 못했습니다.</p>
-          <button type="button" onClick={() => window.location.reload()} className="font-semibold text-zinc-900 underline underline-offset-4">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="font-semibold text-zinc-900 underline underline-offset-4"
+          >
             다시 확인
           </button>
         </div>
@@ -84,7 +111,10 @@ function AccountSessionNotice() {
       {status === 'signed-out' && (
         <p className="text-sm text-zinc-600">
           마이페이지를 이용하려면 로그인해 주세요.{' '}
-          <Link className="font-semibold text-zinc-900 underline underline-offset-4" href="/?login=1">
+          <Link
+            className="font-semibold text-zinc-900 underline underline-offset-4"
+            href="/?login=1"
+          >
             스토어에서 로그인
           </Link>
         </p>

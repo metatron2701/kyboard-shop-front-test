@@ -69,8 +69,7 @@ function inferSoundType(switchType?: string, description?: string): string {
 
 function mapStoreProductToBuilderProduct(item: StoreProduct): Product {
   const firstImage =
-    item.galleryImages?.[0] ||
-    (item.images?.length ? mediaFrom(item.images[0])?.url || '' : '')
+    item.galleryImages?.[0] || (item.images?.length ? mediaFrom(item.images[0])?.url || '' : '')
   const soldOutFlag = isProductSoldOut(item as StoreProduct & { soldOut?: boolean })
 
   return {
@@ -202,17 +201,15 @@ export default function CustomBuilderPage() {
   // 2. 호환 스위치: 선택된 기판의 supportPins 규격 만족 (기판 없으면 전체 허용)
   const compatibleSwitches = manualSelection.pcb
     ? allSwitches.filter((sw) => {
-      const pins = manualSelection.pcb?.supportPins || [3, 5]
-      return sw.pin ? pins.includes(sw.pin) : true
-    })
+        const pins = manualSelection.pcb?.supportPins || [3, 5]
+        return sw.pin ? pins.includes(sw.pin) : true
+      })
     : allSwitches
 
   // 수동 부품 선택 및 선택 해제(토글) 핸들러
   const handleSelectPart = (category: keyof ManualSelectionState, product: Product) => {
     if (isProductSoldOut(product)) {
-      alert(
-        `[${product.name}]\n해당 부품은 현재 품절 상태이므로 선택할 수 없습니다.`,
-      )
+      alert(`[${product.name}]\n해당 부품은 현재 품절 상태이므로 선택할 수 없습니다.`)
       return
     }
 
@@ -313,10 +310,10 @@ export default function CustomBuilderPage() {
       build.keycap.productId,
     ].sort((a, b) => a - b)
     // 2. 이미 장바구니에 똑같은 부품 4개 + 똑같은 조립 옵션이 있는지 검사
-    const isAlreadyInCart = products.some((p) => {
+    const isAlreadyInCart = products.some((p: any) => {
       if (!p.partProductIds || p.partProductIds.length !== 4) return false
       const existingSorted = [...p.partProductIds].sort((a, b) => a - b)
-      
+
       const isSameParts = existingSorted.every((id, idx) => id === currentPartIds[idx])
       const isSameAssembly = Boolean(p.includeAssembly) === Boolean(includeAssembly)
       return isSameParts && isSameAssembly
@@ -324,13 +321,13 @@ export default function CustomBuilderPage() {
     // 3. 이미 같은 조합이 존재할 경우 사용자에게 질문창 띄우기
     if (isAlreadyInCart) {
       const willAddMore = confirm(
-        '이미 장바구니에 동일한 조합의 커스텀 키보드가 담겨 있습니다.\n수량을 1개 더 추가하시겠습니까?'
+        '이미 장바구니에 동일한 조합의 커스텀 키보드가 담겨 있습니다.\n수량을 1개 더 추가하시겠습니까?',
       )
       if (!willAddMore) {
         return // 사용자가 취소를 누르면 담기 중단
       }
     }
-    
+
     setSavingBuild(true)
 
     try {
@@ -349,25 +346,25 @@ export default function CustomBuilderPage() {
       const saved =
         build.buildType === 'AUTO'
           ? await createAutoBuild({
-            buildName: build.buildName,
-            surveyLayout: surveyAnswers.layout,
-            surveyConnectivity: surveyAnswers.connectivity,
-            surveySound: surveyAnswers.soundPref,
-            surveyKeycap: surveyAnswers.keycapStyle,
-            housingProductId: build.housing.productId,
-            pcbProductId: build.pcb.productId,
-            switchProductId: build.switchPart.productId,
-            keycapProductId: build.keycap.productId,
-            includeAssembly,
-          })
+              buildName: build.buildName,
+              surveyLayout: surveyAnswers.layout,
+              surveyConnectivity: surveyAnswers.connectivity,
+              surveySound: surveyAnswers.soundPref,
+              surveyKeycap: surveyAnswers.keycapStyle,
+              housingProductId: build.housing.productId,
+              pcbProductId: build.pcb.productId,
+              switchProductId: build.switchPart.productId,
+              keycapProductId: build.keycap.productId,
+              includeAssembly,
+            })
           : await createManualBuild({
-            buildName: build.buildName,
-            housingProductId: build.housing.productId,
-            pcbProductId: build.pcb.productId,
-            switchProductId: build.switchPart.productId,
-            keycapProductId: build.keycap.productId,
-            includeAssembly,
-          })
+              buildName: build.buildName,
+              housingProductId: build.housing.productId,
+              pcbProductId: build.pcb.productId,
+              switchProductId: build.switchPart.productId,
+              keycapProductId: build.keycap.productId,
+              includeAssembly,
+            })
 
       const buildId = saved.buildId ?? build.buildId ?? 0
       const added = await addItem({
@@ -380,9 +377,7 @@ export default function CustomBuilderPage() {
         shippingFee: 0,
         quantity: 1,
         buildType: saved.buildType,
-        ...(saved.buildType === 'MANUAL'
-          ? { manualBuildId: buildId }
-          : { autoBuildId: buildId }),
+        ...(saved.buildType === 'MANUAL' ? { manualBuildId: buildId } : { autoBuildId: buildId }),
       })
 
       openCart()
@@ -462,20 +457,22 @@ export default function CustomBuilderPage() {
         {/* 빌더 모드 스위처 */}
         <div className="mt-8 inline-flex rounded-full bg-zinc-100 p-1.5">
           <button
-            className={`rounded-full px-6 py-2 text-xs font-semibold tracking-wider transition ${mode === 'auto'
+            className={`rounded-full px-6 py-2 text-xs font-semibold tracking-wider transition ${
+              mode === 'auto'
                 ? 'bg-zinc-950 text-white shadow-sm'
                 : 'text-zinc-600 hover:text-zinc-950'
-              }`}
+            }`}
             onClick={() => setMode('auto')}
             type="button"
           >
             ⚡ 맞춤 설문 추천 (AUTO)
           </button>
           <button
-            className={`rounded-full px-6 py-2 text-xs font-semibold tracking-wider transition ${mode === 'manual'
+            className={`rounded-full px-6 py-2 text-xs font-semibold tracking-wider transition ${
+              mode === 'manual'
                 ? 'bg-zinc-950 text-white shadow-sm'
                 : 'text-zinc-600 hover:text-zinc-950'
-              }`}
+            }`}
             onClick={() => setMode('manual')}
             type="button"
           >
@@ -546,12 +543,15 @@ export default function CustomBuilderPage() {
                           },
                         ].map((opt) => (
                           <button
-                            className={`rounded-xl border p-5 text-left transition ${surveyAnswers.layout === opt.val
+                            className={`rounded-xl border p-5 text-left transition ${
+                              surveyAnswers.layout === opt.val
                                 ? 'border-zinc-950 bg-zinc-950 text-white'
                                 : 'border-zinc-200 hover:border-zinc-400'
-                              }`}
+                            }`}
                             key={opt.val}
-                            onClick={() => setSurveyAnswers((prev) => ({ ...prev, layout: opt.val }))}
+                            onClick={() =>
+                              setSurveyAnswers((prev) => ({ ...prev, layout: opt.val }))
+                            }
                             type="button"
                           >
                             <p className="text-base font-semibold">{opt.label}</p>
@@ -586,10 +586,11 @@ export default function CustomBuilderPage() {
                           { val: 'any', label: '상관 없음', desc: '가장 호환성이 좋은 기판 우선' },
                         ].map((opt) => (
                           <button
-                            className={`rounded-xl border p-5 text-left transition ${surveyAnswers.connectivity === opt.val
+                            className={`rounded-xl border p-5 text-left transition ${
+                              surveyAnswers.connectivity === opt.val
                                 ? 'border-zinc-950 bg-zinc-950 text-white'
                                 : 'border-zinc-200 hover:border-zinc-400'
-                              }`}
+                            }`}
                             key={opt.val}
                             onClick={() =>
                               setSurveyAnswers((prev) => ({ ...prev, connectivity: opt.val }))
@@ -641,10 +642,11 @@ export default function CustomBuilderPage() {
                           },
                         ].map((opt) => (
                           <button
-                            className={`rounded-xl border p-5 text-left transition ${surveyAnswers.soundPref === opt.val
+                            className={`rounded-xl border p-5 text-left transition ${
+                              surveyAnswers.soundPref === opt.val
                                 ? 'border-zinc-950 bg-zinc-950 text-white'
                                 : 'border-zinc-200 hover:border-zinc-400'
-                              }`}
+                            }`}
                             key={opt.val}
                             onClick={() =>
                               setSurveyAnswers((prev) => ({ ...prev, soundPref: opt.val }))
@@ -686,10 +688,11 @@ export default function CustomBuilderPage() {
                           },
                         ].map((opt) => (
                           <button
-                            className={`rounded-xl border p-5 text-left transition ${surveyAnswers.keycapStyle === opt.val
+                            className={`rounded-xl border p-5 text-left transition ${
+                              surveyAnswers.keycapStyle === opt.val
                                 ? 'border-zinc-950 bg-zinc-950 text-white'
                                 : 'border-zinc-200 hover:border-zinc-400'
-                              }`}
+                            }`}
                             key={opt.val}
                             onClick={() =>
                               setSurveyAnswers((prev) => ({ ...prev, keycapStyle: opt.val }))
@@ -825,16 +828,16 @@ export default function CustomBuilderPage() {
                               setRecommendedBuild((prev) =>
                                 prev
                                   ? {
-                                    ...prev,
-                                    assemblyFee: checked ? 20000 : 0,
-                                    totalPrice:
-                                      prev.housing.basePrice +
-                                      prev.pcb.basePrice +
-                                      prev.switchPart.basePrice +
-                                      prev.keycap.basePrice +
-                                      (prev.keycap.selectedOption?.additionalPrice || 0) +
-                                      (checked ? 20000 : 0),
-                                  }
+                                      ...prev,
+                                      assemblyFee: checked ? 20000 : 0,
+                                      totalPrice:
+                                        prev.housing.basePrice +
+                                        prev.pcb.basePrice +
+                                        prev.switchPart.basePrice +
+                                        prev.keycap.basePrice +
+                                        (prev.keycap.selectedOption?.additionalPrice || 0) +
+                                        (checked ? 20000 : 0),
+                                    }
                                   : null,
                               )
                             }}
@@ -897,12 +900,13 @@ export default function CustomBuilderPage() {
                     const isActive = currentStep === step
                     return (
                       <button
-                        className={`rounded-xl border p-3.5 text-left transition ${isActive
+                        className={`rounded-xl border p-3.5 text-left transition ${
+                          isActive
                             ? 'border-zinc-950 bg-zinc-950 text-white shadow-sm'
                             : selected
                               ? 'border-zinc-300 bg-zinc-100/70 text-zinc-900'
                               : 'border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300'
-                          }`}
+                        }`}
                         key={step}
                         onClick={() => setCurrentStep(step)}
                         type="button"
@@ -910,7 +914,9 @@ export default function CustomBuilderPage() {
                         <div className="flex items-center justify-between text-xs font-semibold">
                           <span>{title}</span>
                           {selected && (
-                            <span className="text-[10px] text-emerald-600 font-bold">✓ 선택완료</span>
+                            <span className="text-[10px] text-emerald-600 font-bold">
+                              ✓ 선택완료
+                            </span>
                           )}
                         </div>
                         <p
@@ -934,8 +940,8 @@ export default function CustomBuilderPage() {
                     )}
                     {currentStep === 3 && manualSelection.pcb && (
                       <span className="text-zinc-900 font-medium">
-                        (기판 {manualSelection.pcb.supportPins?.join(', ')}핀 규격 호환 스위치만 표시
-                        중)
+                        (기판 {manualSelection.pcb.supportPins?.join(', ')}핀 규격 호환 스위치만
+                        표시 중)
                       </span>
                     )}
                     {currentStep === 4 && (
@@ -954,12 +960,13 @@ export default function CustomBuilderPage() {
 
                     return (
                       <button
-                        className={`group relative flex flex-col overflow-hidden rounded-xl border text-left transition ${isSelected
+                        className={`group relative flex flex-col overflow-hidden rounded-xl border text-left transition ${
+                          isSelected
                             ? 'border-zinc-950 ring-2 ring-zinc-950 ring-offset-2'
                             : isUnavailable
                               ? 'cursor-not-allowed opacity-50 border-zinc-200 bg-zinc-50'
                               : 'border-zinc-200 bg-white hover:border-zinc-400'
-                          }`}
+                        }`}
                         disabled={isUnavailable}
                         key={item.productId}
                         onClick={() => handleSelectPart(activeField, item)}
@@ -1037,7 +1044,9 @@ export default function CustomBuilderPage() {
                         </div>
                         <span className="shrink-0 font-semibold text-zinc-950">
                           {part
-                            ? formatPrice(part.basePrice + (part.selectedOption?.additionalPrice || 0))
+                            ? formatPrice(
+                                part.basePrice + (part.selectedOption?.additionalPrice || 0),
+                              )
                             : '-'}
                         </span>
                       </div>

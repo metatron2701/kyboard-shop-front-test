@@ -18,11 +18,13 @@ export default function TestOrderCheck({ widgets }: { widgets: TossPaymentsWidge
   const [paying, setPaying] = useState(false)
   const [paymentMessage, setPaymentMessage] = useState('')
   const paymentPending = useRef<AbortController | null>(null)
-  const requestPayment = useRef(createPaymentRequester({
-    find: getDevTestOrder,
-    request: (value) => widgets.requestPayment(value),
-    remember: (value) => sessionStorage.setItem(PAYMENT_ATTEMPT_KEY, JSON.stringify(value)),
-  }))
+  const requestPayment = useRef(
+    createPaymentRequester({
+      find: getDevTestOrder,
+      request: (value) => widgets.requestPayment(value),
+      remember: (value) => sessionStorage.setItem(PAYMENT_ATTEMPT_KEY, JSON.stringify(value)),
+    }),
+  )
   const widgetId = useId().replace(/[^a-zA-Z0-9_-]/g, '')
   const paymentSelector = '#toss-payment-' + widgetId
   const agreementSelector = '#toss-agreement-' + widgetId
@@ -32,15 +34,30 @@ export default function TestOrderCheck({ widgets }: { widgets: TossPaymentsWidge
     if (!order) return
     let active = true
     setWidgetState({ status: 'loading', message: '결제수단 및 결제 약관 UI를 표시하고 있습니다.' })
-    const rendering = renderPaymentWidgets(widgets, { payment: paymentSelector, agreement: agreementSelector })
+    const rendering = renderPaymentWidgets(widgets, {
+      payment: paymentSelector,
+      agreement: agreementSelector,
+    })
     rendering.ready.then(
-      () => { if (active) setWidgetState({ status: 'ready', message: '결제수단 및 결제 약관 UI 표시 완료' }) },
+      () => {
+        if (active)
+          setWidgetState({ status: 'ready', message: '결제수단 및 결제 약관 UI 표시 완료' })
+      },
       (error: unknown) => {
-        if (active) setWidgetState({ status: 'error', message: error instanceof OrderWidgetRenderingError
-          ? error.message : '결제 UI를 표시하지 못했습니다. 페이지를 새로고침해 주세요.' })
+        if (active)
+          setWidgetState({
+            status: 'error',
+            message:
+              error instanceof OrderWidgetRenderingError
+                ? error.message
+                : '결제 UI를 표시하지 못했습니다. 페이지를 새로고침해 주세요.',
+          })
       },
     )
-    return () => { active = false; void rendering.dispose().catch(() => {}) }
+    return () => {
+      active = false
+      void rendering.dispose().catch(() => {})
+    }
   }, [widgets, order, paymentSelector, agreementSelector])
   const pending = useRef<AbortController | null>(null)
   const mounted = useRef(false)
@@ -96,10 +113,17 @@ export default function TestOrderCheck({ widgets }: { widgets: TossPaymentsWidge
     setPaymentMessage('서버 주문 확인 및 테스트 결제 인증을 요청하고 있습니다.')
     try {
       // 요청 함수에서 서버 주문을 다시 대조한 뒤 SDK를 호출하도록 준비한 주문과 위젯 상태를 전달합니다.
-      await requestPayment.current({ order, ready: widgetState.status === 'ready',
+      await requestPayment.current({
+        order,
+        ready: widgetState.status === 'ready',
         clientKey: process.env.NEXT_PUBLIC_TOSS_PAYMENTS_CLIENT_KEY,
-        origin: window.location.origin, signal: controller.signal })
-      if (mounted.current) setPaymentMessage('결과 화면으로 이동하지 않았다면 다시 결제하지 말고 기존 결제 인증 결과를 확인해 주세요.')
+        origin: window.location.origin,
+        signal: controller.signal,
+      })
+      if (mounted.current)
+        setPaymentMessage(
+          '결과 화면으로 이동하지 않았다면 다시 결제하지 말고 기존 결제 인증 결과를 확인해 주세요.',
+        )
     } catch (error) {
       if (mounted.current) setPaymentMessage(paymentErrorMessage(error))
     } finally {
@@ -110,7 +134,11 @@ export default function TestOrderCheck({ widgets }: { widgets: TossPaymentsWidge
   return (
     <section>
       <h2>개발 테스트 주문 준비</h2>
-      <button type="button" disabled={state.status === 'loading' || paying} onClick={prepareTestPaymentOrder}>
+      <button
+        type="button"
+        disabled={state.status === 'loading' || paying}
+        onClick={prepareTestPaymentOrder}
+      >
         테스트 주문 생성 및 금액 설정
       </button>
       <p role="status">
@@ -134,13 +162,18 @@ export default function TestOrderCheck({ widgets }: { widgets: TossPaymentsWidge
         <h3>결제 약관</h3>
         <div id={agreementSelector.slice(1)} />
         <p role={widgetState.status === 'error' ? 'alert' : 'status'}>{widgetState.message}</p>
-        <button type="button" onClick={requestTestPayment} disabled={paying || state.status !== 'ready' || widgetState.status !== 'ready'}>
+        <button
+          type="button"
+          onClick={requestTestPayment}
+          disabled={paying || state.status !== 'ready' || widgetState.status !== 'ready'}
+        >
           {paying ? '테스트 결제 인증 요청 중…' : '테스트 결제하기'}
         </button>
         <p role="status">{paymentMessage}</p>
       </section>
       <p>
-        테스트 주문은 30분 후 만료되며 서버 재시작 시 삭제됩니다. 인증 성공 화면에서 백엔드 승인 API를 호출합니다. 결과가 불확실하면 새 결제를 요청하지 말고 기존 결과를 확인해 주세요.
+        테스트 주문은 30분 후 만료되며 서버 재시작 시 삭제됩니다. 인증 성공 화면에서 백엔드 승인
+        API를 호출합니다. 결과가 불확실하면 새 결제를 요청하지 말고 기존 결과를 확인해 주세요.
       </p>
     </section>
   )

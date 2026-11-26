@@ -14,8 +14,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const defaultTitle = 'MONO / KEYS — 기판 · 스위치 · 키캡'
 const title = makeSiteSettings.title ?? defaultTitle
 const description =
-  makeSiteSettings.description ??
-  '기판, 스위치, 키캡과 액세서리로 완성하는 나만의 키보드.'
+  makeSiteSettings.description ?? '기판, 스위치, 키캡과 액세서리로 완성하는 나만의 키보드.'
 const favicon = makeSiteSettings.icons?.icon
 const socialImage = makeSiteSettings.openGraph?.image
 const googleAnalyticsId = sanitizeHtmlAttribute(makeSiteSettings.analytics?.googleAnalyticsId)
