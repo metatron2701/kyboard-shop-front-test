@@ -10,20 +10,10 @@ export type OrderRefundPreview = {
   cancellationEnabled: boolean
   pgProvider?: string | null
   paymentMethod?: 'CARD' | 'TRANSFER' | 'EASY_PAY' | 'VIRTUAL_ACCOUNT' | null
-  items?: Array<{
-    productName: string
-    unitPrice: number
-    quantity: number
-    thumbnailUrl: string | null
-  }>
+  items?: Array<{ productName: string; unitPrice: number; quantity: number; thumbnailUrl: string | null }>
 }
 
-const paymentMethods = {
-  CARD: '카드',
-  TRANSFER: '계좌이체',
-  EASY_PAY: '간편결제',
-  VIRTUAL_ACCOUNT: '가상계좌',
-}
+const paymentMethods = { CARD: '카드', TRANSFER: '계좌이체', EASY_PAY: '간편결제', VIRTUAL_ACCOUNT: '가상계좌' }
 
 export function formatRefundMethod(preview: OrderRefundPreview) {
   if (!preview.paymentMethod) return '결제 수단 정보 없음'
@@ -77,11 +67,7 @@ export async function readOrderRefundHistory(orderNumber: string, signal: AbortS
   return response.data
 }
 
-export function requestFullCancellation(
-  orderNumber: string,
-  cancelReason: string,
-  expectedRemainingAmount: number,
-) {
+export function requestFullCancellation(orderNumber: string, cancelReason: string, expectedRemainingAmount: number) {
   // 확인한 잔액과 취소 사유만 보냅니다. 결제 키와 실제 취소 금액은 서버가 확인합니다.
   return postRefundAction(orderNumber, 'cancel', {
     mode: 'FULL',
@@ -108,11 +94,8 @@ async function postRefundAction(
       signal: AbortSignal.timeout(action === 'cancel' ? 210_000 : 75_000),
     },
   )
-  if (
-    !response.success ||
-    !response.data ||
-    !['CANCELLATION_CONFIRMED', 'PENDING_CONFIRMATION'].includes(response.data.status)
-  ) {
+  if (!response.success || !response.data ||
+      !['CANCELLATION_CONFIRMED', 'PENDING_CONFIRMATION'].includes(response.data.status)) {
     throw new Error('취소 결과 응답을 확인할 수 없습니다.')
   }
   return response.data

@@ -16,17 +16,10 @@ export default function MyOrdersPage() {
         <MyOrderList key={JSON.stringify([session.user.id, session.sessionVersion])} />
       ) : (
         <p className="text-sm">
-          주문 내역을 보려면{' '}
-          <Link href="/?login=1" className="underline">
-            로그인
-          </Link>
-          해 주세요.
+          주문 내역을 보려면 <Link href="/?login=1" className="underline">로그인</Link>해 주세요.
         </p>
       )}
-      <Link
-        href="/mypage"
-        className="mt-6 inline-block rounded-md border border-neutral-200 px-4 py-2 text-sm"
-      >
+      <Link href="/mypage" className="mt-6 inline-block rounded-md border border-neutral-200 px-4 py-2 text-sm">
         마이페이지로 돌아가기
       </Link>
     </section>

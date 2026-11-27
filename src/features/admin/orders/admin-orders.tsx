@@ -47,7 +47,11 @@ function AdminOrderRow({ order, onSaved }: { order: AdminOrder; onSaved: () => P
     contactFields.every((key) => draft[key].trim()) &&
     (!shipmentChanged || (draft.company?.trim() && draft.tracking?.trim()))
 
-  function field(key: keyof AdminOrderChanges, label: string, maxLength: number) {
+  function field(
+    key: keyof AdminOrderChanges,
+    label: string,
+    maxLength: number,
+  ) {
     return (
       <input
         className={inputStyle}
@@ -57,12 +61,7 @@ function AdminOrderRow({ order, onSaved }: { order: AdminOrder; onSaved: () => P
         maxLength={maxLength}
         disabled={busy}
         value={draft[key] ?? ''}
-        onChange={(e) =>
-          setDraft({
-            ...draft,
-            [key]: key === 'phone' ? e.target.value.replace(/[^0-9]/g, '') : e.target.value,
-          })
-        }
+        onChange={(e) => setDraft({ ...draft, [key]: key === 'phone' ? e.target.value.replace(/[^0-9]/g, '') : e.target.value })}
       />
     )
   }

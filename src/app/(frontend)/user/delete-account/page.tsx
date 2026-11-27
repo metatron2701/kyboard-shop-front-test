@@ -6,10 +6,8 @@ import { useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { deleteCustomerAccount, verifyWithdrawalPassword } from '@/features/user/api'
 import { useWithdrawalSession, type WithdrawalSession } from '@/features/user/withdrawal-session'
 
-const outlineButton =
-  'h-12 rounded-md border border-zinc-300 px-4 text-sm font-medium transition hover:bg-zinc-50 disabled:opacity-50'
-const primaryButton =
-  'h-12 rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50'
+const outlineButton = 'h-12 rounded-md border border-zinc-300 px-4 text-sm font-medium transition hover:bg-zinc-50 disabled:opacity-50'
+const primaryButton = 'h-12 rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50'
 
 const cardClass = 'space-y-5 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-9'
 
@@ -41,15 +39,8 @@ export default function DeleteAccountPage() {
       {completion ? (
         <div className={cardClass}>
           <p role="status">회원탈퇴가 완료되었습니다.</p>
-          {completion === 'failed' && (
-            <p role="alert">브라우저에 저장된 일부 정보를 정리하지 못했습니다.</p>
-          )}
-          <button
-            className={primaryButton}
-            disabled={completion === 'cleaning'}
-            onClick={() => router.replace('/')}
-            type="button"
-          >
+          {completion === 'failed' && <p role="alert">브라우저에 저장된 일부 정보를 정리하지 못했습니다.</p>}
+          <button className={primaryButton} disabled={completion === 'cleaning'} onClick={() => router.replace('/')} type="button">
             확인
           </button>
         </div>
@@ -61,10 +52,7 @@ export default function DeleteAccountPage() {
 }
 
 /** 사전 비밀번호 확인과 최종 탈퇴를 나눠 진행하며, 확인 결과는 이 폼의 현재 비밀번호·세션에서만 사용합니다. */
-function WithdrawalForm({
-  onComplete,
-  session,
-}: {
+function WithdrawalForm({ onComplete, session }: {
   onComplete: (session: WithdrawalSession) => Promise<void>
   session: WithdrawalSession | null
 }) {
@@ -92,11 +80,10 @@ function WithdrawalForm({
       if (matches) {
         confirmation.current?.showModal()
       } else {
-        setMessage('비밀번호가 일치하지 않습니다.')
+         setMessage('비밀번호가 일치하지 않습니다.')
       }
     } catch (error) {
-      if (!request.signal.aborted)
-        setMessage(error instanceof Error ? error.message : '요청을 처리하지 못했습니다.')
+      if (!request.signal.aborted) setMessage(error instanceof Error ? error.message : '요청을 처리하지 못했습니다.')
     } finally {
       activeRequest.current = null
       if (!request.signal.aborted) setPending(false)
@@ -137,9 +124,7 @@ function WithdrawalForm({
           <>
             <form className="space-y-3" onSubmit={verifyPassword}>
               <div>
-                <label className="block text-sm font-medium" htmlFor="withdrawal-password">
-                  현재 비밀번호
-                </label>
+                <label className="block text-sm font-medium" htmlFor="withdrawal-password">현재 비밀번호</label>
                 <input
                   autoComplete="current-password"
                   className="h-12 w-full rounded-md border border-zinc-300 px-4 text-sm outline-none focus:border-zinc-950"
@@ -172,38 +157,21 @@ function WithdrawalForm({
         ) : (
           <p className="text-sm text-zinc-600">
             회원탈퇴는 로그인 후 이용할 수 있습니다.{' '}
-            <Link className="font-semibold underline underline-offset-4" href="/?login=1">
-              스토어에서 로그인
-            </Link>
+            <Link className="font-semibold underline underline-offset-4" href="/?login=1">스토어에서 로그인</Link>
           </p>
         )}
-        <p>
-          <Link className="text-sm underline underline-offset-4" href="/mypage">
-            마이페이지로 돌아가기
-          </Link>
-        </p>
+        <p><Link className="text-sm underline underline-offset-4" href="/mypage">마이페이지로 돌아가기</Link></p>
       </div>
       <dialog
         aria-labelledby="withdrawal-confirm-title"
         className="m-auto w-[min(92%,420px)] rounded-xl border border-zinc-200 p-6 shadow-xl backdrop:bg-black/50"
-        onCancel={(event) => {
-          if (activeRequest.current) event.preventDefault()
-        }}
+        onCancel={(event) => { if (activeRequest.current) event.preventDefault() }}
         ref={confirmation}
       >
-        <h2 className="text-xl font-medium" id="withdrawal-confirm-title">
-          회원탈퇴 확인
-        </h2>
+        <h2 className="text-xl font-medium" id="withdrawal-confirm-title">회원탈퇴 확인</h2>
         <p className="mt-3 text-sm text-zinc-600">회원탈퇴를 진행하시겠습니까?</p>
         <div className="mt-6 flex justify-end gap-2">
-          <button
-            className={outlineButton}
-            disabled={pending}
-            onClick={() => confirmation.current?.close()}
-            type="button"
-          >
-            취소
-          </button>
+          <button className={outlineButton} disabled={pending} onClick={() => confirmation.current?.close()} type="button">취소</button>
           <button className={primaryButton} disabled={pending} onClick={withdraw} type="button">
             {pending ? '처리 중…' : '탈퇴하기'}
           </button>

@@ -40,7 +40,7 @@ function CheckoutSuccessContent() {
           amount,
         })
 
-        clearSelectedItems()
+        void clearSelectedItems()
         setOrder(confirmedOrder)
         setStatus('success')
       } catch (err) {
@@ -59,9 +59,7 @@ function CheckoutSuccessContent() {
       <div className="mx-auto max-w-xl rounded-2xl border border-zinc-200 bg-white p-12 text-center shadow-sm">
         <div className="mx-auto mb-6 flex h-16 w-16 animate-spin items-center justify-center rounded-full border-4 border-zinc-200 border-t-zinc-900" />
         <h1 className="mb-2 text-2xl font-semibold">결제 승인 중입니다</h1>
-        <p className="text-sm text-zinc-500">
-          토스페이먼츠와 결제 결과를 확인하고 있습니다. 잠시만 기다려 주세요.
-        </p>
+        <p className="text-sm text-zinc-500">토스페이먼츠와 결제 결과를 확인하고 있습니다. 잠시만 기다려 주세요.</p>
       </div>
     )
   }
@@ -71,12 +69,7 @@ function CheckoutSuccessContent() {
       <div className="mx-auto max-w-xl rounded-2xl border border-red-200 bg-white p-12 text-center shadow-sm">
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-red-600">
           <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
         <p className="mb-2 text-xs font-semibold tracking-[0.2em] text-red-600">PAYMENT FAILED</p>
@@ -107,9 +100,7 @@ function CheckoutSuccessContent() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <p className="mb-2 text-xs font-semibold tracking-[0.2em] text-zinc-500">
-        ORDER CONFIRMATION
-      </p>
+      <p className="mb-2 text-xs font-semibold tracking-[0.2em] text-zinc-500">ORDER CONFIRMATION</p>
       <h1 className="mb-4 text-4xl font-medium tracking-[-0.04em]">Thank you for your order!</h1>
       <p className="mb-8 text-sm text-zinc-600">
         결제 및 주문이 정상적으로 완료되었습니다. (주문번호: <strong>{order.orderNumber}</strong>)

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { checkSignupEmail, signUpCustomer } from '@/features/user/api'
 import { loadPostcode, postcodeError } from '@/features/user/postcode'
+import { useSignupEmailVerification } from '@/features/user/use-signup-email-verification'
 import { ApiRequestError } from '@/lib/api-client'
 
 // =============================================================================
@@ -15,6 +16,8 @@ const inputBaseClass =
 const inputClass = 'mt-2 ' + inputBaseClass
 const outlineButton =
   'h-12 shrink-0 rounded-md border border-zinc-300 px-4 text-sm font-medium transition hover:border-zinc-950 hover:bg-zinc-50 disabled:opacity-60'
+// 좁은 화면에서는 버튼을 입력 아래에 배치해 주소와 번호 입력 공간을 확보합니다.
+const verificationRow = 'grid gap-2 min-[420px]:grid-cols-[minmax(0,1fr)_auto]'
 const dialogClass =
   'm-auto w-[min(92%,480px)] rounded-xl border border-zinc-200 bg-white p-6 shadow-xl backdrop:bg-black/50'
 
@@ -31,8 +34,7 @@ const terms = [
   {
     name: 'privacyPolicy',
     label: '개인정보 수집·이용',
-    description:
-      '이메일, 이름, 연락처, 배송지는 회원 관리와 주문 배송에 사용됩니다. 비밀번호는 해시로 저장됩니다.',
+    description: '이메일, 이름, 연락처, 배송지는 회원 관리와 주문 배송에 사용됩니다. 비밀번호는 해시로 저장됩니다.',
   },
 ] as const
 
@@ -78,6 +80,11 @@ function formatPhoneNumber(digitsOnly: string): string {
   return [p1, p2, p3].filter(Boolean).join('-')
 }
 
+// 남은 초를 MM:SS 형식으로 표시합니다.
+function formatCountdown(seconds: number) {
+  return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
+}
+
 // =============================================================================
 // 회원가입 페이지 메인 컴포넌트
 // =============================================================================
@@ -111,11 +118,12 @@ export default function SignupPage() {
   const [error, setError] = useState<FormError | null>(null)
   const [pending, setPending] = useState(false)
   const [completed, setCompleted] = useState(false)
+  const [signupRetryUntil, setSignupRetryUntil] = useState(0)
 
   // ---------------------------------------------------------------------------
   // 3. 비동기 요청 제어 및 DOM 참조 (Ref)
   // ---------------------------------------------------------------------------
-  const submitLock = useRef(false)
+  const submitRequest = useRef<AbortController | null>(null)
   const emailRequest = useRef<AbortController | null>(null)
   const postcodeDialog = useRef<HTMLDialogElement>(null)
   const postcodeHost = useRef<HTMLDivElement>(null)
@@ -131,22 +139,45 @@ export default function SignupPage() {
   const available = currentEmailCheck?.available === true
   const emailValid = emailPattern.test(normalizedEmail) && normalizedEmail.length <= 50
   const disabled = pending || completed
+  const verification = useSignupEmailVerification(normalizedEmail, available && emailValid)
 
   const passwordsMatch = password === passwordConfirm
   const showPasswordMismatch = passwordConfirmTouched && !passwordsMatch
   const passwordValid = validPassword(password)
   const phoneValid = phonePattern.test(phone)
 
-  const hasRequiredFields = Boolean(
-    name.trim() && postalCode.trim() && address.trim() && detail.trim(),
-  )
+  const hasRequiredFields = Boolean(name.trim() && postalCode.trim() && address.trim() && detail.trim())
   const canSubmit =
     available &&
+    verification.verified &&
     passwordValid &&
     phoneValid &&
     hasRequiredFields &&
     termsConsent.serviceTerms &&
     termsConsent.privacyPolicy
+
+  // 가입 요청도 즉시 잠그고, 화면을 떠난 뒤에 도착한 결과는 무시합니다.
+  useEffect(() => () => {
+    submitRequest.current?.abort()
+    submitRequest.current = null
+  }, [])
+
+  useEffect(() => {
+    if (!signupRetryUntil) return
+    let timer: number | undefined
+    const unlockWhenElapsed = () => {
+      const remaining = signupRetryUntil - Date.now()
+      if (remaining <= 0) {
+        setSignupRetryUntil(0)
+        return
+      }
+      timer = window.setTimeout(unlockWhenElapsed, Math.min(2_147_483_647, remaining))
+    }
+    unlockWhenElapsed()
+    return () => {
+      if (timer !== undefined) window.clearTimeout(timer)
+    }
+  }, [signupRetryUntil])
 
   // ---------------------------------------------------------------------------
   // 5. 이메일 중복 확인 (500ms 디바운스 적용)
@@ -246,13 +277,15 @@ export default function SignupPage() {
   // ---------------------------------------------------------------------------
   async function submitSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (submitLock.current || completed) return
+    if (submitRequest.current || completed || signupRetryUntil > Date.now()) return
 
     setPasswordConfirmTouched(true)
-    if (!passwordsMatch || !canSubmit) return
+    const verificationToken = verification.getValidToken()
+    if (!passwordsMatch || !canSubmit || !verificationToken) return
 
     setError(null)
-    submitLock.current = true
+    const request = new AbortController()
+    submitRequest.current = request
     setPending(true)
 
     try {
@@ -265,24 +298,44 @@ export default function SignupPage() {
         address: address.trim(),
         detailAddress: detail.trim(),
         termsConsent,
-      })
+        verificationToken,
+      }, request.signal)
+      if (submitRequest.current !== request) return
+      verification.reset()
 
       setPassword('')
       setPasswordConfirm('')
       setCompleted(true)
       successDialog.current?.showModal()
     } catch (cause) {
+      if (submitRequest.current !== request) return
       if (cause instanceof ApiRequestError) {
-        setError({ message: cause.message, fields: cause.fieldErrors })
-        if (cause.status === 409) {
-          setEmailCheck({ email: normalizedEmail, available: false, message: cause.message })
+        if (cause.status === 403 && cause.code === 'VERIFICATION_REQUIRED') {
+          verification.clearProof('가입 인증이 유효하지 않습니다. 인증번호를 다시 받아 주세요.')
+        } else if (cause.status === 409 && cause.code === 'VERIFICATION_IN_USE') {
+          setError({ message: '이메일 인증을 사용한 가입 요청을 처리 중입니다. 잠시 후 다시 시도해 주세요.' })
+        } else if (cause.status === 429) {
+          const seconds = cause.retryAfterSeconds ?? 60
+          setSignupRetryUntil(Date.now() + seconds * 1000)
+          setError({ message: seconds > 0 ? `가입 요청이 많습니다. ${seconds}초 뒤 다시 시도해 주세요.` : cause.message })
+        } else if (cause.status === 503) {
+          setError({ message: '지금은 회원가입을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.' })
+        } else {
+          setError({ message: cause.message, fields: cause.fieldErrors })
+          // 기존 중복 오류는 전용 코드 없이 이 문구를 반환합니다. 다른 409는 중복으로 표시하지 않습니다.
+          if (cause.status === 409 && !cause.code && cause.message === '이미 사용 중인 이메일입니다.') {
+            verification.reset()
+            setEmailCheck({ email: normalizedEmail, available: false, message: cause.message })
+          }
         }
       } else {
         setError({ message: '서버 연결에 실패했습니다. 다시 시도해 주세요.' })
       }
     } finally {
-      submitLock.current = false
-      setPending(false)
+      if (submitRequest.current === request) {
+        submitRequest.current = null
+        setPending(false)
+      }
     }
   }
 
@@ -374,39 +427,102 @@ export default function SignupPage() {
       </div>
 
       {/* 가입 폼 */}
-      <form
-        className="space-y-5 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-9"
-        onSubmit={submitSignup}
-      >
-        {/* 이메일 입력 및 중복 확인 */}
-        <label className="block text-sm font-medium text-zinc-800">
-          이메일 *
-          <input
-            aria-describedby="signup-email-feedback"
-            autoComplete="email"
-            className={inputClass}
-            disabled={disabled}
-            maxLength={50}
-            name="email"
-            onChange={(event) => {
-              emailRequest.current?.abort()
-              setEmail(event.target.value)
-              setEmailCheck(null)
-              setError(null)
-            }}
-            placeholder="example@email.com"
-            required
-            type="email"
-            value={email}
-          />
-          <span
-            className={`mt-1 block text-xs ${emailFeedback.color}`}
-            id="signup-email-feedback"
-            role="status"
-          >
+      <form className="space-y-5 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-9" onSubmit={submitSignup}>
+        {/* 중복 확인 뒤 번호를 발송하고, 같은 자리에서 남은 대기 시간과 재발송 버튼을 보여줍니다. */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-800" htmlFor="signup-email">이메일 *</label>
+          <div className={`mt-2 ${verificationRow}`}>
+            <input
+              aria-describedby="signup-email-feedback"
+              autoComplete="email"
+              className={inputBaseClass + ' min-w-0'}
+              disabled={disabled}
+              id="signup-email"
+              maxLength={50}
+              name="email"
+              onChange={(event) => {
+                if (submitRequest.current) return
+                emailRequest.current?.abort()
+                verification.reset()
+                setEmail(event.target.value)
+                setEmailCheck(null)
+                setError(null)
+              }}
+              placeholder="example@email.com"
+              required
+              type="email"
+              value={email}
+            />
+            {!verification.verified && (
+              <button
+                className={outlineButton}
+                disabled={disabled || !verification.canSend}
+                onClick={() => void verification.send()}
+                type="button"
+              >
+                {verification.pending === 'send' ? '발송 중…'
+                  : verification.resendSeconds > 0 ? `재발송 ${formatCountdown(verification.resendSeconds)}`
+                    : verification.challenge ? '인증번호 재발송' : '인증번호 발송'}
+              </button>
+            )}
+          </div>
+          <span className={`mt-1 block text-xs ${emailFeedback.color}`} id="signup-email-feedback" role="status">
             {emailFeedback.text}
           </span>
-        </label>
+          {verification.challenge && (
+            <div className="mt-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+                <label className="font-medium text-zinc-800" htmlFor="signup-email-code">이메일 인증번호</label>
+                <span aria-label="인증번호 남은 시간" className="text-xs tabular-nums text-zinc-600">
+                  {verification.codeSeconds > 0 ? formatCountdown(verification.codeSeconds) : '만료'}
+                </span>
+              </div>
+              <div className={`mt-2 ${verificationRow}`}>
+                <input
+                  aria-describedby="signup-verification-feedback"
+                  autoComplete="one-time-code"
+                  className={inputBaseClass + ' min-w-0'}
+                  disabled={disabled || verification.pending !== null || verification.codeSeconds === 0}
+                  id="signup-email-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  onChange={(event) => verification.setCode(event.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                  onKeyDown={(event) => {
+                    // 인증번호에서 Enter를 눌러도 회원가입 대신 번호 확인만 실행합니다.
+                    if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                      event.preventDefault()
+                      if (!disabled) void verification.verify()
+                    }
+                  }}
+                  placeholder="인증번호 6자리"
+                  type="text"
+                  value={verification.code}
+                />
+                <button
+                  className={outlineButton}
+                  disabled={disabled || !verification.canVerify}
+                  onClick={() => void verification.verify()}
+                  type="button"
+                >
+                  {verification.pending === 'verify' ? '확인 중…'
+                    : verification.verifyRetrySeconds > 0 ? `다시 확인 ${formatCountdown(verification.verifyRetrySeconds)}`
+                      : '인증 확인'}
+                </button>
+              </div>
+            </div>
+          )}
+          <div id="signup-verification-feedback" role="status">
+            {verification.challenge && verification.codeSeconds === 0 && (
+              <p className="mt-2 text-xs text-red-700">인증번호가 만료됐습니다. 새 번호를 받아 주세요.</p>
+            )}
+            {/* 번호가 만료된 뒤 재발송도 제한됐다면 만료와 요청 제한을 함께 안내합니다. */}
+            {verification.feedback && (verification.feedback.error || !verification.challenge || verification.codeSeconds > 0) && (
+              <p className={`mt-2 text-xs ${verification.feedback.error ? 'text-red-700' : 'text-green-700'}`}>
+                {verification.feedback.text}
+              </p>
+            )}
+          </div>
+        </div>
 
         {/* 비밀번호 입력 */}
         <label className="block text-sm font-medium text-zinc-800">
@@ -427,20 +543,14 @@ export default function SignupPage() {
             type="password"
             value={password}
           />
-          <span
-            className={`mt-1 block text-xs ${passwordFeedback.color}`}
-            id="signup-password-feedback"
-          >
+          <span className={`mt-1 block text-xs ${passwordFeedback.color}`} id="signup-password-feedback">
             {passwordFeedback.text}
           </span>
         </label>
 
         {/* 비밀번호 확인 */}
         <div>
-          <label
-            className="block text-sm font-medium text-zinc-800"
-            htmlFor="signup-password-confirm"
-          >
+          <label className="block text-sm font-medium text-zinc-800" htmlFor="signup-password-confirm">
             비밀번호 확인 *
           </label>
           <input
@@ -468,11 +578,7 @@ export default function SignupPage() {
             type="password"
             value={passwordConfirm}
           />
-          <p
-            className={`mt-1 text-xs ${passwordConfirmFeedback.color}`}
-            id="signup-password-confirm-feedback"
-            role="status"
-          >
+          <p className={`mt-1 text-xs ${passwordConfirmFeedback.color}`} id="signup-password-confirm-feedback" role="status">
             {passwordConfirmFeedback.text}
           </p>
         </div>
@@ -532,12 +638,7 @@ export default function SignupPage() {
               required
               value={postalCode}
             />
-            <button
-              aria-haspopup="dialog"
-              className={outlineButton}
-              onClick={searchAddress}
-              type="button"
-            >
+            <button aria-haspopup="dialog" className={outlineButton} onClick={searchAddress} type="button">
               주소 검색
             </button>
           </div>
@@ -567,12 +668,7 @@ export default function SignupPage() {
             {detailAddressFeedback.text}
           </span>
           {ADDRESS_ERROR_FIELDS.filter((f) => f !== 'defaultAddress.detailAddress').map(
-            (field) =>
-              fields?.[field] && (
-                <p className="text-xs text-red-700" key={field}>
-                  {fields[field]}
-                </p>
-              ),
+            (field) => fields?.[field] && <p className="text-xs text-red-700" key={field}>{fields[field]}</p>,
           )}
         </fieldset>
 
@@ -594,7 +690,9 @@ export default function SignupPage() {
                   type="checkbox"
                 />
                 {label} (필수)
-                {!termsConsent[name] && <span className="text-xs text-red-700">체크해 주세요</span>}
+                {!termsConsent[name] &&
+                  <span className="text-xs text-red-700">체크해 주세요</span>
+                }
               </label>
               <details className="pl-6 text-xs leading-5 text-zinc-600">
                 <summary className="cursor-pointer">{label} 내용 보기</summary>
@@ -615,7 +713,7 @@ export default function SignupPage() {
         {/* 제출 버튼 */}
         <button
           className="h-13 w-full rounded-md bg-zinc-950 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={disabled || !canSubmit}
+          disabled={disabled || !canSubmit || signupRetryUntil > 0}
           type="submit"
         >
           {pending ? '가입 요청 중…' : '회원가입'}
@@ -624,10 +722,7 @@ export default function SignupPage() {
         {/* 로그인 링크 */}
         <p className="text-center text-sm text-zinc-500">
           이미 계정이 있으신가요?{' '}
-          <Link
-            className="font-semibold text-zinc-900 underline underline-offset-4"
-            href="/?login=1"
-          >
+          <Link className="font-semibold text-zinc-900 underline underline-offset-4" href="/?login=1">
             스토어에서 로그인
           </Link>
         </p>
@@ -635,10 +730,7 @@ export default function SignupPage() {
 
       {/* 스토어 복귀 링크 */}
       <div className="mt-7 text-center">
-        <Link
-          className="text-xs font-medium tracking-[0.1em] text-zinc-500 hover:text-black"
-          href="/"
-        >
+        <Link className="text-xs font-medium tracking-[0.1em] text-zinc-500 hover:text-black" href="/">
           ← BACK TO STORE
         </Link>
       </div>
@@ -654,18 +746,10 @@ export default function SignupPage() {
         ref={postcodeDialog}
       >
         <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="text-xl font-medium" id="signup-postcode-title">
-            주소 검색
-          </h2>
-          <button className={outlineButton} onClick={closeAddressSearch} type="button">
-            닫기
-          </button>
+          <h2 className="text-xl font-medium" id="signup-postcode-title">주소 검색</h2>
+          <button className={outlineButton} onClick={closeAddressSearch} type="button">닫기</button>
         </div>
-        {postcodeMessage && (
-          <p className="text-sm text-zinc-700" role="status">
-            {postcodeMessage}
-          </p>
-        )}
+        {postcodeMessage && <p className="text-sm text-zinc-700" role="status">{postcodeMessage}</p>}
         <div className="h-[min(55vh,440px)]" ref={postcodeHost} />
       </dialog>
 
@@ -676,9 +760,7 @@ export default function SignupPage() {
         onCancel={(event) => event.preventDefault()}
         ref={successDialog}
       >
-        <h2 className="text-xl font-medium" id="signup-success">
-          회원가입이 완료되었습니다.
-        </h2>
+        <h2 className="text-xl font-medium" id="signup-success">회원가입이 완료되었습니다.</h2>
         <button
           className="mt-5 h-12 rounded-md bg-zinc-950 px-6 text-sm font-semibold text-white transition hover:bg-zinc-800"
           onClick={() => router.replace('/?login=1')}

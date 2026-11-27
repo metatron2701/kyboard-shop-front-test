@@ -80,7 +80,10 @@ export default async function HomePage() {
           </Link>
         </div>
         {backendError ? (
-          <BackendErrorState message={backendError} title="상품을 불러오지 못했습니다" />
+          <BackendErrorState
+            message={backendError}
+            title="상품을 불러오지 못했습니다"
+          />
         ) : products.length ? (
           <div className="grid grid-cols-3 gap-7 max-lg:grid-cols-2 max-sm:grid-cols-1">
             {products.slice(0, 3).map((product, idx) => (

@@ -17,34 +17,26 @@ export default function ProfilePage() {
 
   return (
     <section className="mx-auto w-[min(92%,560px)] py-14 sm:py-20">
-      <h1 className="mb-8 text-center text-4xl font-medium tracking-[-0.06em] sm:text-5xl">
-        회원 정보 수정
-      </h1>
+      <h1 className="mb-8 text-center text-4xl font-medium tracking-[-0.06em] sm:text-5xl">회원 정보 수정</h1>
       {session ? (
         // 다른 계정으로 바뀌거나 다시 로그인하면 입력 중이던 값이 남지 않도록 영역 전체를 새로 그립니다.
         <div key={`${session.user.id}-${session.sessionVersion}`} className="grid gap-6">
           <ProfileForm session={session} />
-          <PasswordForm
-            onChanged={() => {
-              setPasswordChanged(true)
-              // 화면을 로그아웃 상태로 바꾸고 로그인 창을 엽니다.
-              session.signOutAfterPasswordChange()
-            }}
-          />
+          <PasswordForm onChanged={() => {
+            setPasswordChanged(true)
+            // 화면을 로그아웃 상태로 바꾸고 로그인 창을 엽니다.
+            session.signOutAfterPasswordChange()
+          }} />
         </div>
       ) : passwordChanged ? (
         <div className={cardClass}>
-          <p role="status" className="text-sm text-zinc-700">
-            비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인해 주세요.
-          </p>
+          <p role="status" className="text-sm text-zinc-700">비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인해 주세요.</p>
         </div>
       ) : (
         <SignedOutNotice />
       )}
       <p className="mt-7 text-center">
-        <Link className="text-sm underline underline-offset-4" href="/mypage">
-          마이페이지로 돌아가기
-        </Link>
+        <Link className="text-sm underline underline-offset-4" href="/mypage">마이페이지로 돌아가기</Link>
       </p>
     </section>
   )
@@ -63,26 +55,16 @@ function SignedOutNotice() {
       .catch(() => {
         if (active) setStatus('error')
       })
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [])
 
   return (
     <div className={cardClass}>
-      {status === 'loading' && (
-        <p role="status" className="text-sm text-zinc-600">
-          회원 정보를 확인하고 있어요.
-        </p>
-      )}
+      {status === 'loading' && <p role="status" className="text-sm text-zinc-600">회원 정보를 확인하고 있어요.</p>}
       {status === 'error' && (
         <div className="space-y-2 text-sm text-zinc-600">
           <p role="alert">회원 정보를 확인하지 못했습니다.</p>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="font-semibold text-zinc-900 underline underline-offset-4"
-          >
+          <button type="button" onClick={() => window.location.reload()} className="font-semibold text-zinc-900 underline underline-offset-4">
             다시 확인
           </button>
         </div>
@@ -90,10 +72,7 @@ function SignedOutNotice() {
       {status === 'signed-out' && (
         <p className="text-sm text-zinc-600">
           회원 정보를 수정하려면 로그인해 주세요.{' '}
-          <Link
-            className="font-semibold text-zinc-900 underline underline-offset-4"
-            href="/?login=1"
-          >
+          <Link className="font-semibold text-zinc-900 underline underline-offset-4" href="/?login=1">
             스토어에서 로그인
           </Link>
         </p>

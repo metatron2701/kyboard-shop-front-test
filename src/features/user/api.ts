@@ -10,22 +10,17 @@ export type CustomerSignupRequest = {
   address: string
   detailAddress: string
   termsConsent: { serviceTerms: boolean; privacyPolicy: boolean }
+  verificationToken: string
 }
 
 type MemberApiResponse<T> = { success?: unknown; message?: unknown; data?: T }
 
 // 팀 백엔드의 공통 응답은 회원 API에서만 풀어 다른 기능의 공용 요청 동작을 유지합니다.
-async function memberRequest<T>(
-  path: string,
-  init: RequestInit,
-  status: number,
-): Promise<T | undefined> {
+async function memberRequest<T>(path: string, init: RequestInit, status: number): Promise<T | undefined> {
   const result = await apiRequest<MemberApiResponse<T> | null>(path, init, status)
   if (result?.success !== true) {
-    const message =
-      typeof result?.message === 'string' && result.message
-        ? result.message
-        : '서버 응답을 확인하지 못했습니다. 다시 시도해 주세요.'
+    const message = typeof result?.message === 'string' && result.message
+      ? result.message : '서버 응답을 확인하지 못했습니다. 다시 시도해 주세요.'
     throw new ApiRequestError(message, status)
   }
   return result.data
@@ -34,9 +29,7 @@ async function memberRequest<T>(
 export async function checkSignupEmail(email: string, signal: AbortSignal): Promise<boolean> {
   const query = new URLSearchParams({ email })
   const result = await memberRequest<{ available?: unknown } | null>(
-    `/api/auth/check-email?${query}`,
-    { signal, cache: 'no-store' },
-    200,
+    `/api/auth/check-email?${query}`, { signal, cache: 'no-store' }, 200,
   )
   if (typeof result?.available !== 'boolean') {
     throw new Error('중복 확인 결과를 확인하지 못했습니다.')
@@ -44,57 +37,65 @@ export async function checkSignupEmail(email: string, signal: AbortSignal): Prom
   return result.available
 }
 
-/** 팀 화면의 평면 요청 형식을 전송하며, 계약된 201 응답을 받은 경우에만 가입 완료로 처리합니다. */
-export async function signUpCustomer(input: CustomerSignupRequest): Promise<void> {
-  await memberRequest('/api/users/signup', { method: 'POST', body: JSON.stringify(input) }, 201)
+// 서버가 발급한 ID와 시간은 응답 형식을 확인한 뒤 타이머와 가입에 사용합니다.
+function validSeconds(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0
+}
+
+export async function sendSignupEmailCode(email: string, signal: AbortSignal) {
+  const result = await memberRequest<{
+    challengeId?: unknown
+    expiresInSeconds?: unknown
+    resendAfterSeconds?: unknown
+  }>('/api/auth/email/send', { method: 'POST', signal, body: JSON.stringify({ email }) }, 200)
+  if (typeof result?.challengeId !== 'string' || !result.challengeId
+      || !validSeconds(result.expiresInSeconds) || !validSeconds(result.resendAfterSeconds)) {
+    throw new Error('인증번호 발송 결과를 확인하지 못했습니다.')
+  }
+  return { challengeId: result.challengeId, expiresInSeconds: result.expiresInSeconds, resendAfterSeconds: result.resendAfterSeconds }
+}
+
+export async function verifySignupEmailCode(email: string, challengeId: string, code: string, signal: AbortSignal) {
+  // 인증번호를 숫자로 변환하지 않아 앞자리 0도 서버까지 전달합니다.
+  const result = await memberRequest<{ verificationToken?: unknown; expiresInSeconds?: unknown }>(
+    '/api/auth/email/verify', { method: 'POST', signal, body: JSON.stringify({ email, challengeId, code }) }, 200,
+  )
+  if (typeof result?.verificationToken !== 'string' || !result.verificationToken || !validSeconds(result.expiresInSeconds)) {
+    throw new Error('이메일 인증 결과를 확인하지 못했습니다.')
+  }
+  return { verificationToken: result.verificationToken, expiresInSeconds: result.expiresInSeconds }
+}
+
+/** 팀 화면의 평면 요청과 이메일 인증 토큰을 전송합니다. 201 응답을 받은 경우에만 가입 완료로 처리합니다. */
+export async function signUpCustomer(input: CustomerSignupRequest, signal: AbortSignal): Promise<void> {
+  await memberRequest('/api/users/signup', { method: 'POST', signal, body: JSON.stringify(input) }, 201)
 }
 
 async function requestWithdrawal<T>(
-  path: string,
-  method: 'POST' | 'DELETE',
-  password: string,
-  status: number,
-  signal: AbortSignal,
+  path: string, method: 'POST' | 'DELETE', password: string, status: number, signal: AbortSignal,
 ): Promise<T | undefined> {
   try {
-    return await memberRequest<T>(
-      path,
-      {
-        method,
-        signal,
-        body: JSON.stringify({ password }),
-      },
-      status,
-    )
+    return await memberRequest<T>(path, {
+      method,
+      signal,
+      body: JSON.stringify({ password }),
+    }, status)
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 401) {
       throw new ApiRequestError('로그인 정보를 다시 확인해 주세요.', error.status)
     }
-    if (
-      error instanceof ApiRequestError &&
-      error.status === 403 &&
-      error.message === 'API request failed (403)'
-    ) {
-      throw new ApiRequestError(
-        '요청 권한 또는 보안 인증을 확인하지 못했습니다. 다시 로그인 후 시도해 주세요.',
-        error.status,
-      )
+    if (error instanceof ApiRequestError && error.status === 403
+      && error.message === 'API request failed (403)') {
+      throw new ApiRequestError('요청 권한 또는 보안 인증을 확인하지 못했습니다. 다시 로그인 후 시도해 주세요.', error.status)
     }
     throw error
   }
 }
 
 // POST는 비밀번호 일치 여부를 받고, 실제 계정 처리는 아래 DELETE에서 수행합니다.
-export async function verifyWithdrawalPassword(
-  password: string,
-  signal: AbortSignal,
-): Promise<boolean> {
+export async function verifyWithdrawalPassword(password: string, signal: AbortSignal): Promise<boolean> {
   const result = await requestWithdrawal<{ verified?: unknown } | null>(
-    '/api/users/me/verify-password',
-    'POST',
-    password,
-    200,
-    signal,
+    '/api/users/me/verify-password', 'POST', password, 200, signal,
   )
   if (typeof result?.verified !== 'boolean') {
     throw new Error('비밀번호 확인 결과를 확인하지 못했습니다.')
@@ -118,14 +119,10 @@ export type ProfileUpdateRequest = {
 
 /** 이름·전화번호·기본 배송지를 수정하고, 서버가 돌려준 최신 회원정보를 화면 형식으로 반환합니다. */
 export async function updateMyProfile(input: ProfileUpdateRequest): Promise<ApiUser> {
-  const user = await memberRequest<ServerUser>(
-    '/api/users/me',
-    {
-      method: 'PATCH',
-      body: JSON.stringify(input),
-    },
-    200,
-  )
+  const user = await memberRequest<ServerUser>('/api/users/me', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  }, 200)
   if (!user) {
     throw new Error('수정된 회원 정보를 확인하지 못했습니다.')
   }
@@ -133,16 +130,9 @@ export async function updateMyProfile(input: ProfileUpdateRequest): Promise<ApiU
 }
 
 /** 현재 비밀번호를 확인한 뒤 새 비밀번호로 바꿉니다. 성공하면 서버가 인증 쿠키를 만료시키므로 다시 로그인해야 합니다. */
-export async function changeMyPassword(
-  currentPassword: string,
-  newPassword: string,
-): Promise<void> {
-  await memberRequest(
-    '/api/users/me/password',
-    {
-      method: 'PATCH',
-      body: JSON.stringify({ currentPassword, newPassword }),
-    },
-    200,
-  )
+export async function changeMyPassword(currentPassword: string, newPassword: string): Promise<void> {
+  await memberRequest('/api/users/me/password', {
+    method: 'PATCH',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  }, 200)
 }

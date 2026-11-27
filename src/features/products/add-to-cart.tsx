@@ -4,18 +4,18 @@ import { useContext, useState } from 'react'
 import { MinusIcon, PlusIcon } from '@/components/icons'
 import { useCart } from '@/features/cart/cart-provider'
 import { formatPrice, type StoreProduct } from '@/lib/store-shared'
-import { ProductCartContext } from '../cart/components/CartContext'
-import { ProductType } from '../cart/interface/Product'
+import { ProductCartContext } from '../cart/components/CartContext' 
+import { ProductType } from '../cart/interface/Product' 
 
 export function AddToCart({ product, image }: { product: StoreProduct; image?: string }) {
   const { openCart } = useCart()
-  const { handleAddCart } = useContext(ProductCartContext)
+  const { handleAddCart } = useContext(ProductCartContext);
   const [quantity, setQuantity] = useState(1)
   const option = product.options?.[0]
   const optionValue = option?.value ?? ''
   const unitPrice = product.basePrice + (option?.priceAdjustment ?? 0)
 
-  const handleClick = () => {
+  const handleClick = async () => {
     const newProduct: ProductType = {
       productId: product.id,
       name: product.name,
@@ -30,8 +30,10 @@ export function AddToCart({ product, image }: { product: StoreProduct; image?: s
       includeAssembly: false,
     }
 
-    handleAddCart(newProduct)
-    openCart()
+    const added = await handleAddCart(newProduct)
+    if (added) {
+      openCart()
+    }
   }
 
   return (

@@ -22,12 +22,7 @@ function CheckoutFailContent() {
     <div className="mx-auto max-w-xl rounded-2xl border border-red-200 bg-white p-12 text-center shadow-sm">
       <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-red-600">
         <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M6 18L18 6M6 6l12 12"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </div>
       <p className="mb-2 text-xs font-semibold tracking-[0.2em] text-red-600">PAYMENT FAILED</p>

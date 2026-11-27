@@ -1,61 +1,66 @@
-import Link from 'next/link'
-import { ApiRequestError } from '@/lib/api-client'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { getCurrentUser } from '@/features/auth/api'
+import Link from "next/link";
+import { ApiRequestError } from "@/lib/api-client";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { getCurrentUser } from "@/features/auth/api";
 import {
   createAdminProduct,
   deleteAdminProduct,
   getAdminProduct,
   getAdminProducts,
   updateAdminProduct,
-} from '@/features/admin/api'
+} from "@/features/admin/api";
 import type {
   AdminProductInput,
   AdminProductRecord,
   AdminProductUpdateInput,
-} from '@/features/admin/api'
+} from "@/features/admin/api";
 
-import { getCategories } from '@/features/products/api'
-import type { Category } from '@/features/products/types'
+import { getCategories } from "@/features/products/api";
+import type { Category } from "@/features/products/types";
 
-import { ProductImage } from '@/components/common/product-image'
+import { ProductImage } from "@/components/common/product-image";
 
-import AdminOrders from '@/features/admin/orders/admin-orders'
+import AdminOrders from "@/features/admin/orders/admin-orders";
 
-type View = 'register' | 'list' | 'edit' | 'orders'
+type View = "register" | "list" | "edit" | "orders";
 type IconName =
-  | 'box'
-  | 'plus'
-  | 'list'
-  | 'search'
-  | 'filter'
-  | 'upload'
-  | 'image'
-  | 'trash'
-  | 'chevron'
-  | 'bell'
-  | 'user'
-  | 'check'
-  | 'close'
-  | 'alert'
-  | 'menu'
+  | "box"
+  | "plus"
+  | "list"
+  | "search"
+  | "filter"
+  | "upload"
+  | "image"
+  | "trash"
+  | "chevron"
+  | "bell"
+  | "user"
+  | "check"
+  | "close"
+  | "alert"
+  | "menu";
 
-function productCategoryLabel(product: AdminProductRecord, categories: Category[]) {
+function productCategoryLabel(
+  product: AdminProductRecord,
+  categories: Category[],
+) {
   if (product.categoryId === product.parentCategoryId) {
-    return `${product.categoryName} / 소분류 미지정`
+    return `${product.categoryName} / 소분류 미지정`;
   }
-  const parent = categories.find((category) => category.id === product.parentCategoryId)
-  return parent ? `${parent.label} / ${product.categoryName}` : product.categoryName
+  const parent = categories.find(
+    (category) => category.id === product.parentCategoryId,
+  );
+  return parent ? `${parent.label} / ${product.categoryName}` : product.categoryName;
 }
 
 const inputClass =
-  'h-11 w-full rounded-lg border border-zinc-200 bg-white px-3.5 text-sm text-zinc-800 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-800 focus:ring-3 focus:ring-zinc-800/10'
+  "h-11 w-full rounded-lg border border-zinc-200 bg-white px-3.5 text-sm text-zinc-800 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-800 focus:ring-3 focus:ring-zinc-800/10";
 
 function formatProductDate(value?: string | null): string {
-  if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  return new Intl.DateTimeFormat('ko-KR').format(date)
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("ko-KR").format(date);
 }
 
 function Icon({
@@ -63,9 +68,9 @@ function Icon({
   size = 18,
   strokeWidth = 1.8,
 }: {
-  name: IconName
-  size?: number
-  strokeWidth?: number
+  name: IconName;
+  size?: number;
+  strokeWidth?: number;
 }) {
   const paths: Record<IconName, React.ReactNode> = {
     box: (
@@ -144,7 +149,7 @@ function Icon({
         <path d="M4 7h16M4 12h16M4 17h16" />
       </>
     ),
-  }
+  };
 
   return (
     <svg
@@ -160,7 +165,7 @@ function Icon({
     >
       {paths[name]}
     </svg>
-  )
+  );
 }
 
 function Field({
@@ -169,10 +174,10 @@ function Field({
   hint,
   children,
 }: {
-  label: string
-  required?: boolean
-  hint?: string
-  children: React.ReactNode
+  label: string;
+  required?: boolean;
+  hint?: string;
+  children: React.ReactNode;
 }) {
   return (
     <div>
@@ -183,7 +188,7 @@ function Field({
       {children}
       {hint && <p className="mt-1.5 text-xs text-zinc-400">{hint}</p>}
     </div>
-  )
+  );
 }
 
 function FormSection({
@@ -192,10 +197,10 @@ function FormSection({
   description,
   children,
 }: {
-  number: string
-  title: string
-  description: string
-  children: React.ReactNode
+  number: string;
+  title: string;
+  description: string;
+  children: React.ReactNode;
 }) {
   return (
     <section className="rounded-xl border border-zinc-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
@@ -204,13 +209,15 @@ function FormSection({
           {number}
         </span>
         <div>
-          <h2 className="text-base font-bold tracking-[-0.01em] text-zinc-900">{title}</h2>
+          <h2 className="text-base font-bold tracking-[-0.01em] text-zinc-900">
+            {title}
+          </h2>
           <p className="mt-0.5 text-sm text-zinc-400">{description}</p>
         </div>
       </div>
       <div className="p-6">{children}</div>
     </section>
-  )
+  );
 }
 
 function SubcategorySelect({
@@ -221,14 +228,15 @@ function SubcategorySelect({
   emptyLabel,
   required = false,
 }: {
-  categories: Category[]
-  parentId: string
-  value: string
-  onChange: (id: string) => void
-  emptyLabel: string
-  required?: boolean
+  categories: Category[];
+  parentId: string;
+  value: string;
+  onChange: (id: string) => void;
+  emptyLabel: string;
+  required?: boolean;
 }) {
-  const children = categories.find((category) => category.id === parentId)?.subcategories ?? []
+  const children =
+    categories.find((category) => category.id === parentId)?.subcategories ?? [];
   return (
     <select
       aria-label="소분류"
@@ -247,7 +255,7 @@ function SubcategorySelect({
         </option>
       ))}
     </select>
-  )
+  );
 }
 
 function ProductForm({
@@ -257,18 +265,20 @@ function ProductForm({
   onCancel,
   onComplete,
 }: {
-  categories: Category[]
-  mode: 'register' | 'edit'
-  initialProduct?: AdminProductRecord
-  onCancel: () => void
-  onComplete: (message: string) => void
+  categories: Category[];
+  mode: "register" | "edit";
+  initialProduct?: AdminProductRecord;
+  onCancel: () => void;
+  onComplete: (message: string) => void;
 }) {
-  const [images, setImages] = useState<{ name: string; url: string; file: File }[]>([])
-  const [price, setPrice] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('')
-  const [subcategoryId, setSubcategoryId] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const [images, setImages] = useState<
+    { name: string; url: string; file: File }[]
+  >([]);
+  const [price, setPrice] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [subcategoryId, setSubcategoryId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const [spec, setSpec] = useState({
     layout: null as string | null,
     housingMaterial: null as string | null,
@@ -277,53 +287,56 @@ function ProductForm({
     switchPin: null as string | null,
     switchType: null as string | null,
     keycapMaterial: null as string | null,
-  })
-  const inputRef = useRef<HTMLInputElement>(null)
+  });
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleImages = (files: FileList | null) => {
-    const file = files?.[0]
-    if (!file) return
+    const file = files?.[0];
+    if (!file) return;
     if (
-      !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
+      !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
       !/\.(jpe?g|png|webp)$/i.test(file.name)
     ) {
-      setError('JPG, JPEG, PNG, WEBP 이미지 파일만 선택할 수 있습니다.')
-      return
+      setError("JPG, JPEG, PNG, WEBP 이미지 파일만 선택할 수 있습니다.");
+      return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError('이미지 용량은 5MB 이하만 업로드할 수 있습니다.')
-      return
+      setError("이미지 용량은 5MB 이하만 업로드할 수 있습니다.");
+      return;
     }
-    setError('')
+    setError("");
     setImages((current) => {
-      current.forEach((image) => URL.revokeObjectURL(image.url))
-      return [{ name: file.name, url: URL.createObjectURL(file), file }]
-    })
-  }
+      current.forEach((image) => URL.revokeObjectURL(image.url));
+      return [{ name: file.name, url: URL.createObjectURL(file), file }];
+    });
+  };
 
   const removeImage = (index: number) => {
     setImages((current) => {
-      URL.revokeObjectURL(current[index].url)
-      return current.filter((_, itemIndex) => itemIndex !== index)
-    })
-  }
+      URL.revokeObjectURL(current[index].url);
+      return current.filter((_, itemIndex) => itemIndex !== index);
+    });
+  };
 
   const formatNumber = (value: string) =>
-    value.replace(/[^\d]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    value.replace(/[^\d]/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (mode === 'edit') {
-      setError('상품 수정 API는 아직 연결되지 않았습니다.')
-      return
+    event.preventDefault();
+    if (mode === "edit") {
+      setError("상품 수정 API는 아직 연결되지 않았습니다.");
+      return;
     }
 
-    const form = event.currentTarget
-    const formData = new FormData(form)
-    const name = String(formData.get('name') ?? '').trim()
-    const basePrice = Number(String(formData.get('basePrice') ?? '').replaceAll(',', ''))
-    const stockQuantity = Number(formData.get('stockQuantity'))
-    const description = String(formData.get('description') ?? '').trim() || null
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const name = String(formData.get("name") ?? "").trim();
+    const basePrice = Number(
+      String(formData.get("basePrice") ?? "").replaceAll(",", ""),
+    );
+    const stockQuantity = Number(formData.get("stockQuantity"));
+    const description =
+      String(formData.get("description") ?? "").trim() || null;
 
     if (
       !subcategoryId ||
@@ -333,8 +346,8 @@ function ProductForm({
       !Number.isInteger(stockQuantity) ||
       stockQuantity < 0
     ) {
-      setError('상품명, 카테고리, 가격, 재고를 확인해 주세요.')
-      return
+      setError("상품명, 카테고리, 가격, 재고를 확인해 주세요.");
+      return;
     }
 
     const input: AdminProductInput = {
@@ -351,17 +364,17 @@ function ProductForm({
       switchPin: spec.switchPin ? Number(spec.switchPin) : null,
       switchType: spec.switchType,
       keycapMaterial: spec.keycapMaterial,
-    }
+    };
 
-    setError('')
-    setSubmitting(true)
+    setError("");
+    setSubmitting(true);
     try {
-      const productId = await createAdminProduct(input, images[0]?.file)
-      onComplete(`상품이 정상적으로 등록되었습니다. 상품 번호: ${productId}`)
-      form.reset()
-      setPrice('')
-      setSelectedCategory('')
-      setSubcategoryId('')
+      const productId = await createAdminProduct(input, images[0]?.file);
+      onComplete(`상품이 정상적으로 등록되었습니다. 상품 번호: ${productId}`);
+      form.reset();
+      setPrice("");
+      setSelectedCategory("");
+      setSubcategoryId("");
       setSpec({
         layout: null,
         housingMaterial: null,
@@ -370,19 +383,27 @@ function ProductForm({
         switchPin: null,
         switchType: null,
         keycapMaterial: null,
-      })
-      images.forEach((image) => URL.revokeObjectURL(image.url))
-      setImages([])
+      });
+      images.forEach((image) => URL.revokeObjectURL(image.url));
+      setImages([]);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : '상품을 등록할 수 없습니다.')
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "상품을 등록할 수 없습니다.",
+      );
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   return (
     <form onSubmit={submit} className="space-y-5">
-      <FormSection number="01" title="기본 정보" description="상품의 기본 정보를 입력해주세요">
+      <FormSection
+        number="01"
+        title="기본 정보"
+        description="상품의 기본 정보를 입력해주세요"
+      >
         <div className="grid gap-5 md:grid-cols-2">
           <div className="md:col-span-2">
             <Field label="상품명" required>
@@ -390,7 +411,7 @@ function ProductForm({
                 className={inputClass}
                 name="name"
                 placeholder="상품명을 입력해 주세요"
-                defaultValue={initialProduct?.name ?? ''}
+                defaultValue={initialProduct?.name ?? ""}
                 required
               />
             </Field>
@@ -402,18 +423,18 @@ function ProductForm({
                 value={selectedCategory}
                 aria-label="대분류"
                 onChange={(event) => {
-                  const nextCategory = event.target.value
-                  setSelectedCategory(nextCategory)
-                  setSubcategoryId('')
+                  const nextCategory = event.target.value;
+                  setSelectedCategory(nextCategory);
+                  setSubcategoryId("");
                   setSpec({
                     layout: null,
                     housingMaterial: null,
                     supportPins: null,
-                    isWireless: nextCategory === 'pcb' ? false : null,
+                    isWireless: nextCategory === "pcb" ? false : null,
                     switchPin: null,
                     switchType: null,
                     keycapMaterial: null,
-                  })
+                  });
                 }}
                 required
               >
@@ -460,14 +481,16 @@ function ProductForm({
         description="선택한 카테고리에 맞는 규격과 소재를 입력해 주세요."
       >
         {!selectedCategory ? (
-          <p className="text-sm text-zinc-400">먼저 기본 정보에서 상품 카테고리를 선택해 주세요.</p>
+          <p className="text-sm text-zinc-400">
+            먼저 기본 정보에서 상품 카테고리를 선택해 주세요.
+          </p>
         ) : (
           <div className="grid gap-5 md:grid-cols-2">
-            {(selectedCategory === 'housing' || selectedCategory === 'pcb') && (
+            {(selectedCategory === "housing" || selectedCategory === "pcb") && (
               <Field label="배열 규격">
                 <select
                   className={inputClass}
-                  value={spec.layout ?? ''}
+                  value={spec.layout ?? ""}
                   onChange={(event) =>
                     setSpec((current) => ({
                       ...current,
@@ -483,11 +506,11 @@ function ProductForm({
               </Field>
             )}
 
-            {selectedCategory === 'housing' && (
+            {selectedCategory === "housing" && (
               <Field label="하우징 소재">
                 <select
                   className={inputClass}
-                  value={spec.housingMaterial ?? ''}
+                  value={spec.housingMaterial ?? ""}
                   onChange={(event) =>
                     setSpec((current) => ({
                       ...current,
@@ -505,12 +528,12 @@ function ProductForm({
               </Field>
             )}
 
-            {selectedCategory === 'pcb' && (
+            {selectedCategory === "pcb" && (
               <>
                 <Field label="기판 지원 핀 규격">
                   <select
                     className={inputClass}
-                    value={spec.supportPins ?? ''}
+                    value={spec.supportPins ?? ""}
                     onChange={(event) =>
                       setSpec((current) => ({
                         ...current,
@@ -542,12 +565,12 @@ function ProductForm({
               </>
             )}
 
-            {selectedCategory === 'switches' && (
+            {selectedCategory === "switches" && (
               <>
                 <Field label="스위치 핀 수">
                   <select
                     className={inputClass}
-                    value={spec.switchPin ?? ''}
+                    value={spec.switchPin ?? ""}
                     onChange={(event) =>
                       setSpec((current) => ({
                         ...current,
@@ -563,7 +586,7 @@ function ProductForm({
                 <Field label="스위치 분류">
                   <select
                     className={inputClass}
-                    value={spec.switchType ?? ''}
+                    value={spec.switchType ?? ""}
                     onChange={(event) =>
                       setSpec((current) => ({
                         ...current,
@@ -581,11 +604,11 @@ function ProductForm({
               </>
             )}
 
-            {selectedCategory === 'keycaps' && (
+            {selectedCategory === "keycaps" && (
               <Field label="키캡 소재">
                 <select
                   className={inputClass}
-                  value={spec.keycapMaterial ?? ''}
+                  value={spec.keycapMaterial ?? ""}
                   onChange={(event) =>
                     setSpec((current) => ({
                       ...current,
@@ -626,13 +649,17 @@ function ProductForm({
               />
             </div>
           </Field>
-          <Field label="재고 수량" required hint="0 이상의 정수만 입력할 수 있습니다.">
+          <Field
+            label="재고 수량"
+            required
+            hint="0 이상의 정수만 입력할 수 있습니다."
+          >
             <input
               className={inputClass}
               min="0"
               name="stockQuantity"
               placeholder="0"
-              defaultValue={initialProduct?.stockQuantity ?? ''}
+              defaultValue={initialProduct?.stockQuantity ?? ""}
               required
               type="number"
             />
@@ -645,16 +672,20 @@ function ProductForm({
         title="상품 이미지"
         description="대표 이미지 파일을 선택하면 서버에 업로드되어 상품 썸네일로 저장됩니다."
       >
-        {mode === 'edit' && initialProduct?.thumbnailUrl && images.length === 0 && (
-          <div className="mb-4">
-            <p className="mb-2 text-sm font-medium text-zinc-600">현재 대표 이미지</p>
-            <img
-              className="h-28 w-28 rounded-lg border border-zinc-200 object-cover"
-              src={initialProduct.thumbnailUrl}
-              alt={initialProduct.name}
-            />
-          </div>
-        )}
+        {mode === "edit" &&
+          initialProduct?.thumbnailUrl &&
+          images.length === 0 && (
+            <div className="mb-4">
+              <p className="mb-2 text-sm font-medium text-zinc-600">
+                현재 대표 이미지
+              </p>
+              <img
+                className="h-28 w-28 rounded-lg border border-zinc-200 object-cover"
+                src={initialProduct.thumbnailUrl}
+                alt={initialProduct.name}
+              />
+            </div>
+          )}
         <input
           ref={inputRef}
           className="hidden"
@@ -668,16 +699,18 @@ function ProductForm({
           onClick={() => inputRef.current?.click()}
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => {
-            event.preventDefault()
-            handleImages(event.dataTransfer.files)
+            event.preventDefault();
+            handleImages(event.dataTransfer.files);
           }}
         >
           <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 shadow-sm group-hover:text-zinc-900">
             <Icon name="upload" size={19} />
           </span>
           <span className="text-sm font-semibold text-zinc-700">
-            클릭하여 업로드{' '}
-            <span className="font-normal text-zinc-400">또는 이미지를 여기로 끌어오세요</span>
+            클릭하여 업로드{" "}
+            <span className="font-normal text-zinc-400">
+              또는 이미지를 여기로 끌어오세요
+            </span>
           </span>
           <span className="mt-1.5 text-xs text-zinc-400">
             JPG, PNG, WEBP · 최대 5MB · 대표 썸네일 이미지 1개
@@ -690,7 +723,11 @@ function ProductForm({
                 key={`${image.name}-${index}`}
                 className="group relative aspect-square overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50"
               >
-                <img className="h-full w-full object-cover" src={image.url} alt={image.name} />
+                <img
+                  className="h-full w-full object-cover"
+                  src={image.url}
+                  alt={image.name}
+                />
                 <button
                   aria-label={`이미지 ${image.name} 삭제`}
                   className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-zinc-950/75 text-white opacity-0 backdrop-blur transition hover:bg-red-600 group-hover:opacity-100"
@@ -711,7 +748,7 @@ function ProductForm({
             {error}
           </p>
         )}
-        {mode === 'edit' && (
+        {mode === "edit" && (
           <button
             className="h-11 rounded-lg border border-zinc-200 bg-white px-5 text-sm font-semibold text-zinc-600 transition hover:bg-zinc-50"
             type="button"
@@ -726,11 +763,15 @@ function ProductForm({
           type="submit"
         >
           <Icon name="check" size={17} />
-          {submitting ? '등록 중...' : mode === 'edit' ? '변경 사항 저장' : '상품 등록'}
+          {submitting
+            ? "등록 중..."
+            : mode === "edit"
+              ? "변경 사항 저장"
+              : "상품 등록"}
         </button>
       </div>
     </form>
-  )
+  );
 }
 
 function EditProductForm({
@@ -739,67 +780,71 @@ function EditProductForm({
   onCancel,
   onComplete,
 }: {
-  categories: Category[]
-  product: AdminProductRecord
-  onCancel: () => void
-  onComplete: (product: AdminProductRecord) => void
+  categories: Category[];
+  product: AdminProductRecord;
+  onCancel: () => void;
+  onComplete: (product: AdminProductRecord) => void;
 }) {
-  const [name, setName] = useState(product.name)
-  const [price, setPrice] = useState(String(product.basePrice))
-  const [stock, setStock] = useState(String(product.stockQuantity))
-  const [active, setActive] = useState(product.active)
-  const [isWirelessEdited, setIsWirelessEdited] = useState(false)
-  const [description, setDescription] = useState(product.description ?? '')
+  const [name, setName] = useState(product.name);
+  const [price, setPrice] = useState(String(product.basePrice));
+  const [stock, setStock] = useState(String(product.stockQuantity));
+  const [active, setActive] = useState(product.active);
+  const [isWirelessEdited, setIsWirelessEdited] = useState(false);
+  const [description, setDescription] = useState(product.description ?? "");
   const [spec, setSpec] = useState({
-    layout: product.layout ?? '',
-    housingMaterial: product.housingMaterial ?? '',
-    supportPins: product.supportPins ?? '',
+    layout: product.layout ?? "",
+    housingMaterial: product.housingMaterial ?? "",
+    supportPins: product.supportPins ?? "",
     isWireless: product.isWireless ?? false,
-    switchPin: product.switchPin ? String(product.switchPin) : '',
-    switchType: product.switchType ?? '',
-    keycapMaterial: product.keycapMaterial ?? '',
-  })
-  const [image, setImage] = useState<File>()
-  const [imagePreview, setImagePreview] = useState<string | null>(product.thumbnailUrl)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
+    switchPin: product.switchPin ? String(product.switchPin) : "",
+    switchType: product.switchType ?? "",
+    keycapMaterial: product.keycapMaterial ?? "",
+  });
+  const [image, setImage] = useState<File>();
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    product.thumbnailUrl,
+  );
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(
     () => () => {
-      if (imagePreview?.startsWith('blob:')) URL.revokeObjectURL(imagePreview)
+      if (imagePreview?.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
     },
     [imagePreview],
-  )
+  );
 
-  const [categoryValue, setCategoryValue] = useState(product.parentCategoryId)
+  const [categoryValue, setCategoryValue] = useState(product.parentCategoryId);
   const originalSubcategoryId =
-    product.categoryId === product.parentCategoryId ? '' : product.categoryId
-  const [subcategoryId, setSubcategoryId] = useState(originalSubcategoryId)
-  const parentChanged = categoryValue !== product.parentCategoryId
-  const categoryChanged = parentChanged || subcategoryId !== originalSubcategoryId
+    product.categoryId === product.parentCategoryId ? "" : product.categoryId;
+  const [subcategoryId, setSubcategoryId] = useState(originalSubcategoryId);
+  const parentChanged = categoryValue !== product.parentCategoryId;
+  const categoryChanged = parentChanged || subcategoryId !== originalSubcategoryId;
 
   const selectImage = (file?: File) => {
-    if (!file) return
-    const validType = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type)
-    const validExtension = /\.(jpe?g|png|webp)$/i.test(file.name)
+    if (!file) return;
+    const validType = ["image/jpeg", "image/png", "image/webp"].includes(
+      file.type,
+    );
+    const validExtension = /\.(jpe?g|png|webp)$/i.test(file.name);
     if (!validType || !validExtension) {
-      setError('JPG, JPEG, PNG, WEBP 이미지 파일만 선택할 수 있습니다.')
-      return
+      setError("JPG, JPEG, PNG, WEBP 이미지 파일만 선택할 수 있습니다.");
+      return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError('이미지 용량은 5MB 이하만 업로드할 수 있습니다.')
-      return
+      setError("이미지 용량은 5MB 이하만 업로드할 수 있습니다.");
+      return;
     }
-    setError('')
-    setImage(file)
-    setImagePreview(URL.createObjectURL(file))
-  }
+    setError("");
+    setImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const basePrice = Number(price.replaceAll(',', ''))
-    const stockQuantity = Number(stock)
+    event.preventDefault();
+    const basePrice = Number(price.replaceAll(",", ""));
+    const stockQuantity = Number(stock);
     if (
       !name.trim() ||
       !Number.isInteger(basePrice) ||
@@ -807,18 +852,18 @@ function EditProductForm({
       !Number.isInteger(stockQuantity) ||
       stockQuantity < 0
     ) {
-      setError('상품명, 가격, 재고를 확인해 주세요.')
-      return
+      setError("상품명, 가격, 재고를 확인해 주세요.");
+      return;
     }
 
     if (categoryChanged && !subcategoryId) {
-      setError('소분류를 선택해 주세요.')
-      return
+      setError("소분류를 선택해 주세요.");
+      return;
     }
 
     if (description.length > 300) {
-      setError('상품 설명은 300자 이하로 입력해 주세요.')
-      return
+      setError("상품 설명은 300자 이하로 입력해 주세요.");
+      return;
     }
 
     const input: AdminProductUpdateInput = {
@@ -831,27 +876,41 @@ function EditProductForm({
       layout: spec.layout || null,
       housingMaterial: spec.housingMaterial || null,
       supportPins: spec.supportPins || null,
-      ...(categoryValue === 'pcb' && isWirelessEdited ? { isWireless: spec.isWireless } : {}),
+      ...(categoryValue === "pcb" && isWirelessEdited
+        ? { isWireless: spec.isWireless }
+        : {}),
       switchPin: spec.switchPin ? Number(spec.switchPin) : null,
       switchType: spec.switchType || null,
       keycapMaterial: spec.keycapMaterial || null,
-    }
+    };
 
-    setSubmitting(true)
-    setError('')
+    setSubmitting(true);
+    setError("");
     try {
-      const updated = await updateAdminProduct(String(product.productId), input, image)
-      onComplete(updated)
+      const updated = await updateAdminProduct(
+        String(product.productId),
+        input,
+        image,
+      );
+      onComplete(updated);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : '상품을 수정할 수 없습니다.')
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "상품을 수정할 수 없습니다.",
+      );
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   return (
     <form onSubmit={submit} className="space-y-5">
-      <FormSection number="01" title="기본 정보" description="선택한 상품 정보를 수정해 주세요.">
+      <FormSection
+        number="01"
+        title="기본 정보"
+        description="선택한 상품 정보를 수정해 주세요."
+      >
         <div className="grid gap-5 md:grid-cols-2">
           <div className="md:col-span-2">
             <Field label="상품명" required>
@@ -865,9 +924,7 @@ function EditProductForm({
           </div>
           <Field
             label="대분류"
-            hint={
-              parentChanged ? '저장하면 새 대분류에서 사용하지 않는 스펙이 삭제됩니다.' : undefined
-            }
+            hint={parentChanged ? "저장하면 새 대분류에서 사용하지 않는 스펙이 삭제됩니다." : undefined}
           >
             <select
               aria-label="대분류"
@@ -875,15 +932,17 @@ function EditProductForm({
               value={categoryValue}
               disabled={categories.length === 0}
               onChange={(event) => {
-                const nextCategory = event.target.value
-                setCategoryValue(nextCategory)
+                const nextCategory = event.target.value;
+                setCategoryValue(nextCategory);
                 setSubcategoryId(
-                  nextCategory === product.parentCategoryId ? originalSubcategoryId : '',
-                )
+                  nextCategory === product.parentCategoryId ? originalSubcategoryId : "",
+                );
               }}
             >
               {categories.length === 0 && (
-                <option value={product.parentCategoryId}>{product.parentCategoryId}</option>
+                <option value={product.parentCategoryId}>
+                  {product.parentCategoryId}
+                </option>
               )}
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
@@ -898,11 +957,15 @@ function EditProductForm({
               parentId={categoryValue}
               value={subcategoryId}
               onChange={setSubcategoryId}
-              emptyLabel={parentChanged || originalSubcategoryId ? '소분류 선택' : '소분류 미지정'}
+              emptyLabel={parentChanged || originalSubcategoryId ? "소분류 선택" : "소분류 미지정"}
               required={parentChanged || Boolean(originalSubcategoryId)}
             />
           </Field>
-          <Field label="재고 수량" required hint="0 이상의 정수만 입력할 수 있습니다.">
+          <Field
+            label="재고 수량"
+            required
+            hint="0 이상의 정수만 입력할 수 있습니다."
+          >
             <input
               className={inputClass}
               type="number"
@@ -931,7 +994,7 @@ function EditProductForm({
         description="현재 카테고리에 연결된 스펙을 수정합니다. 백엔드 PATCH는 빈 스펙값을 기존 값 유지로 처리합니다."
       >
         <div className="grid gap-5 md:grid-cols-2">
-          {(categoryValue === 'housing' || categoryValue === 'pcb') && (
+          {(categoryValue === "housing" || categoryValue === "pcb") && (
             <Field label="배열 규격">
               <select
                 className={inputClass}
@@ -950,7 +1013,7 @@ function EditProductForm({
               </select>
             </Field>
           )}
-          {categoryValue === 'housing' && (
+          {categoryValue === "housing" && (
             <Field label="하우징 소재">
               <select
                 className={inputClass}
@@ -971,7 +1034,7 @@ function EditProductForm({
               </select>
             </Field>
           )}
-          {categoryValue === 'pcb' && (
+          {categoryValue === "pcb" && (
             <>
               <Field label="기판 지원 핀 규격">
                 <select
@@ -996,9 +1059,9 @@ function EditProductForm({
                     type="checkbox"
                     checked={spec.isWireless}
                     onChange={(event) => {
-                      const isWireless = event.target.checked
-                      setSpec((current) => ({ ...current, isWireless }))
-                      setIsWirelessEdited(true)
+                      const isWireless = event.target.checked;
+                      setSpec((current) => ({ ...current, isWireless }));
+                      setIsWirelessEdited(true);
                     }}
                   />
                   무선 지원
@@ -1006,7 +1069,7 @@ function EditProductForm({
               </Field>
             </>
           )}
-          {categoryValue === 'switches' && (
+          {categoryValue === "switches" && (
             <>
               <Field label="스위치 핀 수">
                 <select
@@ -1044,7 +1107,7 @@ function EditProductForm({
               </Field>
             </>
           )}
-          {categoryValue === 'keycaps' && (
+          {categoryValue === "keycaps" && (
             <Field label="키캡 소재">
               <select
                 className={inputClass}
@@ -1077,7 +1140,9 @@ function EditProductForm({
               className={inputClass}
               inputMode="numeric"
               value={price}
-              onChange={(event) => setPrice(event.target.value.replace(/[^\d]/g, ''))}
+              onChange={(event) =>
+                setPrice(event.target.value.replace(/[^\d]/g, ""))
+              }
               required
             />
           </Field>
@@ -1103,9 +1168,9 @@ function EditProductForm({
                 type="button"
                 className="mt-2 text-xs text-zinc-500 underline"
                 onClick={() => {
-                  setImage(undefined)
-                  setImagePreview(product.thumbnailUrl)
-                  if (inputRef.current) inputRef.current.value = ''
+                  setImage(undefined);
+                  setImagePreview(product.thumbnailUrl);
+                  if (inputRef.current) inputRef.current.value = "";
                 }}
               >
                 새 이미지 선택 취소
@@ -1125,8 +1190,8 @@ function EditProductForm({
             aria-pressed={active}
             className={`h-11 rounded-lg border px-5 text-sm font-semibold transition ${
               active
-                ? 'border-zinc-900 bg-zinc-900 text-white'
-                : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50'
+                ? "border-zinc-900 bg-zinc-900 text-white"
+                : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
             }`}
             type="button"
             onClick={() => setActive(true)}
@@ -1137,8 +1202,8 @@ function EditProductForm({
             aria-pressed={!active}
             className={`h-11 rounded-lg border px-5 text-sm font-semibold transition ${
               !active
-                ? 'border-amber-600 bg-amber-600 text-white'
-                : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50'
+                ? "border-amber-600 bg-amber-600 text-white"
+                : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
             }`}
             type="button"
             onClick={() => setActive(false)}
@@ -1167,11 +1232,11 @@ function EditProductForm({
           disabled={submitting}
         >
           <Icon name="check" size={17} />
-          {submitting ? '저장 중...' : '변경 사항 저장'}
+          {submitting ? "저장 중..." : "변경 사항 저장"}
         </button>
       </div>
     </form>
-  )
+  );
 }
 
 function ProductList({
@@ -1186,60 +1251,59 @@ function ProductList({
   deleting,
   onRegister,
 }: {
-  categories: Category[]
-  products: AdminProductRecord[]
-  onEdit: (product: AdminProductRecord) => void
-  onDetail: (product: AdminProductRecord) => void
-  onDelete: (product: AdminProductRecord) => void
-  loading: boolean
-  error: string
-  onDeleteSelected: (products: AdminProductRecord[]) => Promise<void>
-  deleting: boolean
-  onRegister: () => void
+  categories: Category[];
+  products: AdminProductRecord[];
+  onEdit: (product: AdminProductRecord) => void;
+  onDetail: (product: AdminProductRecord) => void;
+  onDelete: (product: AdminProductRecord) => void;
+  loading: boolean;
+  error: string;
+  onDeleteSelected: (products: AdminProductRecord[]) => Promise<void>;
+  deleting: boolean;
+  onRegister: () => void;
 }) {
-  const ADMIN_PAGE_SIZE = 10
-  const [selectedIds, setSelectedIds] = useState<number[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
-  const [subcategoryFilter, setSubcategoryFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'' | 'active' | 'inactive'>('')
-  const [currentPage, setCurrentPage] = useState(0)
+  const ADMIN_PAGE_SIZE = 10;
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [subcategoryFilter, setSubcategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | "active" | "inactive">(
+    "",
+  );
+  const [currentPage, setCurrentPage] = useState(0);
 
-  const normalizedQuery = searchQuery.trim().toLowerCase()
+  const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
       !normalizedQuery ||
       product.name.toLowerCase().includes(normalizedQuery) ||
-      String(product.productId) === normalizedQuery
+      String(product.productId) === normalizedQuery;
     const matchesCategory =
       (!categoryFilter || product.parentCategoryId === categoryFilter) &&
-      (!subcategoryFilter || product.categoryId === subcategoryFilter)
-    const matchesStatus = statusFilter === '' || product.active === (statusFilter === 'active')
-    return matchesSearch && matchesCategory && matchesStatus
-  })
+      (!subcategoryFilter || product.categoryId === subcategoryFilter);
+    const matchesStatus =
+      statusFilter === "" || product.active === (statusFilter === "active");
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / ADMIN_PAGE_SIZE))
-  const safePage = Math.min(currentPage, totalPages - 1)
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / ADMIN_PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages - 1);
   const paginatedProducts = filteredProducts.slice(
     safePage * ADMIN_PAGE_SIZE,
     (safePage + 1) * ADMIN_PAGE_SIZE,
-  )
+  );
 
   // 필터로 숨겨진 상품은 선택삭제 대상에 포함하지 않습니다.
-  const selectedProducts = filteredProducts.filter((product) =>
-    selectedIds.includes(product.productId),
-  )
+  const selectedProducts = filteredProducts.filter((product) => selectedIds.includes(product.productId));
   const allSelected =
     paginatedProducts.length > 0 &&
-    paginatedProducts.every((product) => selectedIds.includes(product.productId))
+    paginatedProducts.every((product) => selectedIds.includes(product.productId));
   const someVisibleSelected = paginatedProducts.some((product) =>
     selectedIds.includes(product.productId),
-  )
+  );
   const toggleSelection = (id: number, checked: boolean) => {
-    setSelectedIds((current) =>
-      checked ? [...current, id] : current.filter((value) => value !== id),
-    )
-  }
+    setSelectedIds((current) => checked ? [...current, id] : current.filter((value) => value !== id));
+  };
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
@@ -1253,8 +1317,8 @@ function ProductList({
               aria-label="상품명 검색"
               className={`${inputClass} pl-10`}
               onChange={(event) => {
-                setSearchQuery(event.target.value)
-                setCurrentPage(0)
+                setSearchQuery(event.target.value);
+                setCurrentPage(0);
               }}
               placeholder="상품명을 검색해 주세요"
               type="search"
@@ -1268,9 +1332,9 @@ function ProductList({
                 aria-label="대분류 필터"
                 value={categoryFilter}
                 onChange={(event) => {
-                  setCategoryFilter(event.target.value)
-                  setSubcategoryFilter('')
-                  setCurrentPage(0)
+                  setCategoryFilter(event.target.value);
+                  setSubcategoryFilter("");
+                  setCurrentPage(0);
                 }}
               >
                 <option value="">전체 상품</option>
@@ -1293,8 +1357,8 @@ function ProductList({
                 parentId={categoryFilter}
                 value={subcategoryFilter}
                 onChange={(value) => {
-                  setSubcategoryFilter(value)
-                  setCurrentPage(0)
+                  setSubcategoryFilter(value);
+                  setCurrentPage(0);
                 }}
                 emptyLabel="소분류 전체"
               />
@@ -1304,8 +1368,8 @@ function ProductList({
                 className={`${inputClass} w-40 appearance-none pr-9`}
                 value={statusFilter}
                 onChange={(event) => {
-                  setStatusFilter(event.target.value as typeof statusFilter)
-                  setCurrentPage(0)
+                  setStatusFilter(event.target.value as typeof statusFilter);
+                  setCurrentPage(0);
                 }}
               >
                 <option value="">전체 판매 상태</option>
@@ -1320,7 +1384,9 @@ function ProductList({
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-zinc-500">
-            <span className="font-semibold text-zinc-800">{filteredProducts.length}</span>
+            <span className="font-semibold text-zinc-800">
+              {filteredProducts.length}
+            </span>
             개 상품
           </p>
           <div className="flex items-center gap-2">
@@ -1331,7 +1397,7 @@ function ProductList({
               onClick={() => void onDeleteSelected(selectedProducts)}
             >
               <Icon name="trash" size={15} />
-              {deleting ? '삭제 중...' : `선택 삭제 (${selectedProducts.length})`}
+              {deleting ? "삭제 중..." : `선택 삭제 (${selectedProducts.length})`}
             </button>
           </div>
         </div>
@@ -1348,16 +1414,16 @@ function ProductList({
                   type="checkbox"
                   checked={allSelected}
                   ref={(element) => {
-                    if (element) element.indeterminate = someVisibleSelected && !allSelected
+                    if (element) element.indeterminate = someVisibleSelected && !allSelected;
                   }}
                   disabled={deleting || loading || paginatedProducts.length === 0}
                   onChange={(event) => {
-                    const pageIds = paginatedProducts.map((product) => product.productId)
+                    const pageIds = paginatedProducts.map((product) => product.productId);
                     setSelectedIds((current) =>
                       event.target.checked
                         ? Array.from(new Set([...current, ...pageIds]))
                         : current.filter((id) => !pageIds.includes(id)),
-                    )
+                    );
                   }}
                 />
               </th>
@@ -1405,11 +1471,15 @@ function ProductList({
                 </td>
                 <td className="px-3 py-3">{productCategoryLabel(product, categories)}</td>
                 <td className="px-3 py-3">
-                  {new Intl.NumberFormat('ko-KR').format(product.basePrice)}원
+                  {new Intl.NumberFormat("ko-KR").format(product.basePrice)}원
                 </td>
                 <td className="px-3 py-3">{product.stockQuantity}</td>
-                <td className="px-3 py-3">{product.active ? '판매 중' : '판매 중지'}</td>
-                <td className="px-3 py-3">{formatProductDate(product.createdAt)}</td>
+                <td className="px-3 py-3">
+                  {product.active ? "판매 중" : "판매 중지"}
+                </td>
+                <td className="px-3 py-3">
+                  {formatProductDate(product.createdAt)}
+                </td>
                 <td className="px-5 py-3 text-right">
                   <div className="flex justify-end gap-2">
                     <button
@@ -1436,7 +1506,10 @@ function ProductList({
       </div>
 
       {error ? (
-        <div className="px-6 py-12 text-center text-sm text-red-600" role="alert">
+        <div
+          className="px-6 py-12 text-center text-sm text-red-600"
+          role="alert"
+        >
           {error}
         </div>
       ) : loading ? (
@@ -1453,12 +1526,14 @@ function ProductList({
               </span>
             </div>
             <h3 className="text-base font-bold text-zinc-800">
-              {products.length === 0 ? '등록된 상품이 없습니다' : '조건에 맞는 상품이 없습니다'}
+              {products.length === 0
+                ? "등록된 상품이 없습니다"
+                : "조건에 맞는 상품이 없습니다"}
             </h3>
             <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-400">
               {products.length === 0
-                ? 'Spring Boot API에 상품을 연결하면 이곳에서 목록을 확인하고 관리할 수 있습니다.'
-                : '선택한 카테고리와 판매 상태에 해당하는 상품이 없습니다.'}
+                ? "Spring Boot API에 상품을 연결하면 이곳에서 목록을 확인하고 관리할 수 있습니다."
+                : "선택한 카테고리와 판매 상태에 해당하는 상품이 없습니다."}
             </p>
             {products.length === 0 && (
               <button
@@ -1474,8 +1549,7 @@ function ProductList({
       )}
       <div className="flex items-center justify-between border-t border-zinc-100 px-5 py-4 text-xs text-zinc-400">
         <span>
-          전체 {products.length}개 중 {filteredProducts.length}개 표시 · {safePage + 1} /{' '}
-          {totalPages} 페이지
+          전체 {products.length}개 중 {filteredProducts.length}개 표시 · {safePage + 1} / {totalPages} 페이지
         </span>
         <div className="flex items-center gap-2">
           <button
@@ -1497,7 +1571,7 @@ function ProductList({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function ProductDetailDialog({
@@ -1505,25 +1579,35 @@ function ProductDetailDialog({
   product,
   onClose,
 }: {
-  categories: Category[]
-  product: AdminProductRecord
-  onClose: () => void
+  categories: Category[];
+  product: AdminProductRecord;
+  onClose: () => void;
 }) {
   const rows = [
-    ['카테고리', productCategoryLabel(product, categories)],
-    ['판매가', `${new Intl.NumberFormat('ko-KR').format(product.basePrice)}원`],
-    ['재고', String(product.stockQuantity)],
-    ['판매 상태', product.active ? '판매 중' : '판매 중지'],
-    ['등록일', formatProductDate(product.createdAt)],
-    ['상품 설명', product.description || '미입력'],
-    ['배열 규격', product.layout || '미입력'],
-    ['하우징 소재', product.housingMaterial || '미입력'],
-    ['기판 지원 핀', product.supportPins || '미입력'],
-    ['무선 지원', product.isWireless == null ? '미입력' : product.isWireless ? '지원' : '미지원'],
-    ['스위치 핀 수', product.switchPin == null ? '미입력' : `${product.switchPin}핀`],
-    ['스위치 분류', product.switchType || '미입력'],
-    ['키캡 소재', product.keycapMaterial || '미입력'],
-  ]
+    ["카테고리", productCategoryLabel(product, categories)],
+    ["판매가", `${new Intl.NumberFormat("ko-KR").format(product.basePrice)}원`],
+    ["재고", String(product.stockQuantity)],
+    ["판매 상태", product.active ? "판매 중" : "판매 중지"],
+    ["등록일", formatProductDate(product.createdAt)],
+    ["상품 설명", product.description || "미입력"],
+    ["배열 규격", product.layout || "미입력"],
+    ["하우징 소재", product.housingMaterial || "미입력"],
+    ["기판 지원 핀", product.supportPins || "미입력"],
+    [
+      "무선 지원",
+      product.isWireless == null
+        ? "미입력"
+        : product.isWireless
+          ? "지원"
+          : "미지원",
+    ],
+    [
+      "스위치 핀 수",
+      product.switchPin == null ? "미입력" : `${product.switchPin}핀`,
+    ],
+    ["스위치 분류", product.switchType || "미입력"],
+    ["키캡 소재", product.keycapMaterial || "미입력"],
+  ];
 
   return (
     <div
@@ -1539,8 +1623,13 @@ function ProductDetailDialog({
       >
         <div className="mb-5 flex items-start justify-between">
           <div>
-            <p className="text-xs font-semibold text-zinc-400">상품 상세 정보</p>
-            <h2 id="product-detail-title" className="mt-1 text-xl font-bold text-zinc-900">
+            <p className="text-xs font-semibold text-zinc-400">
+              상품 상세 정보
+            </p>
+            <h2
+              id="product-detail-title"
+              className="mt-1 text-xl font-bold text-zinc-900"
+            >
               {product.name}
             </h2>
           </div>
@@ -1563,100 +1652,110 @@ function ProductDetailDialog({
           {rows.map(([label, value]) => (
             <div key={label} className="border-b border-zinc-100 py-3">
               <dt className="text-xs font-medium text-zinc-400">{label}</dt>
-              <dd className="mt-1 whitespace-pre-wrap text-sm text-zinc-800">{value}</dd>
+              <dd className="mt-1 whitespace-pre-wrap text-sm text-zinc-800">
+                {value}
+              </dd>
             </div>
           ))}
         </dl>
       </section>
     </div>
-  )
+  );
 }
 
-export default function AdminDashboard({ previewMode = false }: { previewMode?: boolean }) {
+export default function AdminDashboard({
+  previewMode = false,
+}: {
+  previewMode?: boolean;
+}) {
   const [authStatus, setAuthStatus] = useState<
-    'checking' | 'authorized' | 'unauthenticated' | 'forbidden'
-  >(previewMode ? 'authorized' : 'checking')
-  const [view, setView] = useState<View>('register')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const deleteInProgress = useRef(false)
-  const [toast, setToast] = useState('')
-  const [products, setProducts] = useState<AdminProductRecord[]>([])
-  const [editingProduct, setEditingProduct] = useState<AdminProductRecord>()
-  const [detailProduct, setDetailProduct] = useState<AdminProductRecord>()
-  const [listError, setListError] = useState('')
-  const [loadingProducts, setLoadingProducts] = useState(false)
+    "checking" | "authorized" | "unauthenticated" | "forbidden"
+  >(previewMode ? "authorized" : "checking");
+  const [view, setView] = useState<View>("register");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const deleteInProgress = useRef(false);
+  const [toast, setToast] = useState("");
+  const [products, setProducts] = useState<AdminProductRecord[]>([]);
+  const [editingProduct, setEditingProduct] = useState<AdminProductRecord>();
+  const [detailProduct, setDetailProduct] = useState<AdminProductRecord>();
+  const [listError, setListError] = useState("");
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
-  const [categories, setCategories] = useState<Category[]>([])
-  const [categoryError, setCategoryError] = useState('')
-  const [categoryAttempt, setCategoryAttempt] = useState(0)
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryError, setCategoryError] = useState("");
+  const [categoryAttempt, setCategoryAttempt] = useState(0);
 
   useEffect(() => {
-    if (previewMode) return
-    let current = true
+    if (previewMode) return;
+    let current = true;
     getCurrentUser()
       .then(({ user }) => {
-        if (!current) return
-        if (!user) setAuthStatus('unauthenticated')
-        else if (user.role !== 'admin') setAuthStatus('forbidden')
-        else setAuthStatus('authorized')
+        if (!current) return;
+        if (!user) setAuthStatus("unauthenticated");
+        else if (user.role !== "admin") setAuthStatus("forbidden");
+        else setAuthStatus("authorized");
       })
       .catch(() => {
-        if (current) setAuthStatus('unauthenticated')
-      })
+        if (current) setAuthStatus("unauthenticated");
+      });
     return () => {
-      current = false
-    }
-  }, [previewMode])
+      current = false;
+    };
+  }, [previewMode]);
 
   useEffect(() => {
-    if (authStatus !== 'authorized') return
-    let current = true
+    if (authStatus !== "authorized") return;
+    let current = true;
     getCategories()
       .then((items) => {
         if (current) {
-          setCategories(items.filter((category) => category.id !== 'all'))
+          setCategories(items.filter((category) => category.id !== "all"));
         }
       })
       .catch(() => {
-        if (current) setCategoryError('카테고리를 불러오지 못했습니다.')
-      })
+        if (current) setCategoryError("카테고리를 불러오지 못했습니다.");
+      });
     return () => {
-      current = false
-    }
-  }, [authStatus, categoryAttempt])
+      current = false;
+    };
+  }, [authStatus, categoryAttempt]);
 
   useEffect(() => {
-    if (authStatus !== 'authorized' || view !== 'list') return
-    let current = true
-    setLoadingProducts(true)
-    setListError('')
+    if (authStatus !== "authorized" || view !== "list") return;
+    let current = true;
+    setLoadingProducts(true);
+    setListError("");
     getAdminProducts()
       .then((items) => {
-        if (current) setProducts(items)
+        if (current) setProducts(items);
       })
       .catch((error: unknown) => {
         if (current)
-          setListError(error instanceof Error ? error.message : '상품 목록을 불러올 수 없습니다.')
+          setListError(
+            error instanceof Error
+              ? error.message
+              : "상품 목록을 불러올 수 없습니다.",
+          );
       })
       .finally(() => {
-        if (current) setLoadingProducts(false)
-      })
+        if (current) setLoadingProducts(false);
+      });
     return () => {
-      current = false
-    }
-  }, [authStatus, view])
+      current = false;
+    };
+  }, [authStatus, view]);
 
-  if (authStatus === 'checking') {
+  if (authStatus === "checking") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#fafafa] px-5 text-sm text-zinc-500">
         관리자 권한을 확인하는 중입니다...
       </div>
-    )
+    );
   }
 
-  if (authStatus === 'unauthenticated' || authStatus === 'forbidden') {
-    const isGuest = authStatus === 'unauthenticated'
+  if (authStatus === "unauthenticated" || authStatus === "forbidden") {
+    const isGuest = authStatus === "unauthenticated";
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#fafafa] px-5">
         <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm">
@@ -1668,8 +1767,8 @@ export default function AdminDashboard({ previewMode = false }: { previewMode?: 
           </h1>
           <p className="mt-2.5 text-sm leading-6 text-zinc-500">
             {isGuest
-              ? '관리자 계정으로 로그인한 뒤 다시 접속해 주세요.'
-              : 'ADMIN 권한이 있는 계정만 상품 관리 콘솔에 접근할 수 있습니다.'}
+              ? "관리자 계정으로 로그인한 뒤 다시 접속해 주세요."
+              : "ADMIN 권한이 있는 계정만 상품 관리 콘솔에 접근할 수 있습니다."}
           </p>
           <div className="mt-6 flex justify-center gap-3">
             {isGuest && (
@@ -1689,92 +1788,95 @@ export default function AdminDashboard({ previewMode = false }: { previewMode?: 
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   const navigate = (next: View) => {
-    setView(next)
-    setSidebarOpen(false)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+    setView(next);
+    setSidebarOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const showToast = (message: string) => {
-    setToast(message)
-    window.setTimeout(() => setToast(''), 4200)
-  }
+    setToast(message);
+    window.setTimeout(() => setToast(""), 4200);
+  };
 
   const completeForm = (message: string) => {
-    showToast(message)
-    if (view === 'edit') navigate('list')
-  }
+    showToast(message);
+    if (view === "edit") navigate("list");
+  };
 
   const showProductDetails = async (product: AdminProductRecord) => {
     try {
-      setDetailProduct(await getAdminProduct(String(product.productId)))
+      setDetailProduct(await getAdminProduct(String(product.productId)));
     } catch (error) {
-      showToast(error instanceof Error ? error.message : '상품 상세 정보를 불러올 수 없습니다.')
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "상품 상세 정보를 불러올 수 없습니다.",
+      );
     }
-  }
+  };
 
   const deleteProducts = async (targets: AdminProductRecord[]) => {
-    if (targets.length === 0 || deleteInProgress.current) return
-    const names = targets.map((product) => product.name).join(', ')
-    if (
-      !window.confirm(
-        `${targets.length}개 상품을 정말 삭제하시겠습니까?\n${names}\n삭제 후에는 상품목록에서 볼 수 없으며, 관리자 화면에서 복구할 수 없습니다.`,
-      )
-    )
-      return
+    if (targets.length === 0 || deleteInProgress.current) return;
+    const names = targets.map((product) => product.name).join(", ");
+    if (!window.confirm(
+      `${targets.length}개 상품을 정말 삭제하시겠습니까?\n${names}\n삭제 후에는 상품목록에서 볼 수 없으며, 관리자 화면에서 복구할 수 없습니다.`,
+    )) return;
 
-    deleteInProgress.current = true
-    setDeleting(true)
-    let deletedCount = 0
-    let missingCount = 0
-    const removedIds = new Set<number>()
-    const failures: string[] = []
+    deleteInProgress.current = true;
+    setDeleting(true);
+    let deletedCount = 0;
+    let missingCount = 0;
+    const removedIds = new Set<number>();
+    const failures: string[] = [];
     try {
       // 기존 단건 API를 사용하며 각 상품의 처리 결과를 따로 기록합니다.
       for (const product of targets) {
         try {
-          await deleteAdminProduct(String(product.productId))
-          deletedCount++
-          removedIds.add(product.productId)
+          await deleteAdminProduct(String(product.productId));
+          deletedCount++;
+          removedIds.add(product.productId);
         } catch (error) {
           if (error instanceof ApiRequestError && error.status === 404) {
-            missingCount++
-            removedIds.add(product.productId)
+            missingCount++;
+            removedIds.add(product.productId);
           } else {
-            failures.push(
-              `${product.name}: ${error instanceof Error ? error.message : '삭제 실패'}`,
-            )
+            failures.push(`${product.name}: ${error instanceof Error ? error.message : "삭제 실패"}`);
           }
         }
       }
-      setProducts((current) => current.filter((product) => !removedIds.has(product.productId)))
-      const results = [`${deletedCount}개 삭제 완료`]
-      if (missingCount) results.push(`${missingCount}개는 이미 삭제되었거나 없는 상품입니다`)
-      if (failures.length)
-        results.push(`${failures.length}개 처리 실패 또는 결과 미확인 — ${failures.join(' / ')}`)
+      setProducts((current) => current.filter((product) => !removedIds.has(product.productId)));
+      const results = [`${deletedCount}개 삭제 완료`];
+      if (missingCount) results.push(`${missingCount}개는 이미 삭제되었거나 없는 상품입니다`);
+      if (failures.length) results.push(`${failures.length}개 처리 실패 또는 결과 미확인 — ${failures.join(" / ")}`);
       try {
-        setProducts(await getAdminProducts())
-        setListError('')
+        setProducts(await getAdminProducts());
+        setListError("");
       } catch {
-        results.push('목록을 새로 불러오지 못했습니다. 새로고침해 주세요')
+        results.push("목록을 새로 불러오지 못했습니다. 새로고침해 주세요");
       }
-      showToast(results.join('. '))
+      showToast(results.join(". "));
     } finally {
-      deleteInProgress.current = false
-      setDeleting(false)
+      deleteInProgress.current = false;
+      setDeleting(false);
     }
-  }
+  };
 
-  const pageTitle = view === 'register' ? '상품 등록' : view === 'list' ? '상품 목록' : '상품 수정'
+  const pageTitle =
+    view === "register"
+      ? "상품 등록"
+      : view === "list"
+        ? "상품 목록"
+        : "상품 수정";
   const pageDescription =
-    view === 'register'
-      ? '새 상품을 등록하고 판매 정보를 설정해 주세요.'
-      : view === 'list'
-        ? '등록된 상품을 검색하고 관리해 주세요.'
-        : '선택한 상품의 정보를 수정해 주세요.'
+    view === "register"
+      ? "새 상품을 등록하고 판매 정보를 설정해 주세요."
+      : view === "list"
+        ? "등록된 상품을 검색하고 관리해 주세요."
+        : "선택한 상품의 정보를 수정해 주세요.";
 
   return (
     <div className="min-h-screen bg-[#fafafa] text-zinc-800">
@@ -1787,7 +1889,7 @@ export default function AdminDashboard({ previewMode = false }: { previewMode?: 
       )}
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex w-[248px] flex-col border-r border-zinc-200 bg-white transition-transform duration-200 lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex h-[72px] items-center border-b border-zinc-100 px-6">
@@ -1809,35 +1911,40 @@ export default function AdminDashboard({ previewMode = false }: { previewMode?: 
           </p>
           {[
             {
-              id: 'register' as View,
-              label: '상품 등록',
-              icon: 'plus' as IconName,
+              id: "register" as View,
+              label: "상품 등록",
+              icon: "plus" as IconName,
             },
             {
-              id: 'list' as View,
-              label: '상품 목록',
-              icon: 'list' as IconName,
+              id: "list" as View,
+              label: "상품 목록",
+              icon: "list" as IconName,
             },
-            { id: 'orders' as View, label: '주문/배송 관리', icon: 'box' as IconName },
+            { id: "orders" as View, label: "주문/배송 관리", icon: "box" as IconName },
           ].map((item) => {
-            const active = view === item.id || (view === 'edit' && item.id === 'list')
+            const active =
+              view === item.id || (view === "edit" && item.id === "list");
             return (
               <button
                 key={item.id}
                 className={`mb-1 flex h-11 w-full items-center rounded-lg px-3 text-sm font-semibold transition ${
                   active
-                    ? 'bg-zinc-100 text-zinc-950'
-                    : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
+                    ? "bg-zinc-100 text-zinc-950"
+                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800"
                 }`}
                 onClick={() => navigate(item.id)}
               >
-                <span className={`mr-3 ${active ? 'text-zinc-900' : 'text-zinc-400'}`}>
+                <span
+                  className={`mr-3 ${active ? "text-zinc-900" : "text-zinc-400"}`}
+                >
                   <Icon name={item.icon} size={18} />
                 </span>
                 {item.label}
-                {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-zinc-900" />}
+                {active && (
+                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-zinc-900" />
+                )}
               </button>
-            )
+            );
           })}
         </nav>
         <div className="m-3 rounded-xl border border-zinc-100 bg-zinc-50 p-3.5">
@@ -1847,7 +1954,9 @@ export default function AdminDashboard({ previewMode = false }: { previewMode?: 
             </span>
             <div className="min-w-0">
               <p className="truncate text-xs font-bold text-zinc-700">관리자</p>
-              <p className="mt-0.5 truncate text-[11px] text-zinc-400">상품 관리자</p>
+              <p className="mt-0.5 truncate text-[11px] text-zinc-400">
+                상품 관리자
+              </p>
             </div>
           </div>
         </div>
@@ -1866,10 +1975,8 @@ export default function AdminDashboard({ previewMode = false }: { previewMode?: 
             <div className="hidden items-center gap-2 text-xs text-zinc-400 sm:flex">
               <span>관리자</span>
               <Icon name="chevron" size={13} />
-              <span className="font-medium text-zinc-600">
-                {view === 'orders' ? '주문/배송 관리' : '상품'}
-              </span>
-              {view === 'edit' && (
+              <span className="font-medium text-zinc-600">{view === "orders" ? "주문/배송 관리" : "상품"}</span>
+              {view === "edit" && (
                 <>
                   <Icon name="chevron" size={13} />
                   <span className="font-medium text-zinc-600">수정</span>
@@ -1879,7 +1986,7 @@ export default function AdminDashboard({ previewMode = false }: { previewMode?: 
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden rounded-full border border-zinc-200 bg-zinc-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-700 sm:inline">
-              {previewMode ? '미리보기' : '시스템 정상'}
+              {previewMode ? "미리보기" : "시스템 정상"}
             </span>
             <button
               aria-label="알림"
@@ -1895,18 +2002,14 @@ export default function AdminDashboard({ previewMode = false }: { previewMode?: 
           <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
             <div>
               <h1 className="text-2xl font-extrabold tracking-[-0.035em] text-zinc-950">
-                {view === 'orders' ? '주문/배송 관리' : pageTitle}
+                {view === "orders" ? "주문/배송 관리" : pageTitle}
               </h1>
-              <p className="mt-1.5 text-sm text-zinc-500">
-                {view === 'orders'
-                  ? '주문 내역을 확인하고 배송 준비 중인 주문에 송장을 등록하세요.'
-                  : pageDescription}
-              </p>
+              <p className="mt-1.5 text-sm text-zinc-500">{view === "orders" ? "주문 내역을 확인하고 배송 준비 중인 주문에 송장을 등록하세요." : pageDescription}</p>
             </div>
-            {view === 'list' && (
+            {view === "list" && (
               <button
                 className="inline-flex h-10 items-center gap-2 rounded-lg bg-zinc-900 px-4 text-sm font-semibold text-white shadow-[0_5px_14px_rgba(0,0,0,0.1)] transition hover:bg-zinc-950"
-                onClick={() => navigate('register')}
+                onClick={() => navigate("register")}
               >
                 <Icon name="plus" size={16} />
                 상품 등록
@@ -1914,63 +2017,60 @@ export default function AdminDashboard({ previewMode = false }: { previewMode?: 
             )}
           </div>
 
-          {view !== 'orders' &&
-            (categoryError ? (
-              <p role="alert" className="mb-4 text-sm text-red-700">
-                {categoryError}{' '}
-                <button
-                  type="button"
-                  className="underline"
-                  onClick={() => {
-                    setCategoryError('')
-                    setCategoryAttempt((attempt) => attempt + 1)
-                  }}
-                >
-                  다시 불러오기
-                </button>
-              </p>
-            ) : (
-              categories.length === 0 && (
-                <p role="status" className="mb-4 text-sm text-zinc-500">
-                  카테고리를 불러오는 중입니다.
-                </p>
-              )
-            ))}
+          {view !== "orders" && (categoryError ? (
+            <p role="alert" className="mb-4 text-sm text-red-700">
+              {categoryError}{" "}
+              <button
+                type="button"
+                className="underline"
+                onClick={() => {
+                  setCategoryError("");
+                  setCategoryAttempt((attempt) => attempt + 1);
+                }}
+              >
+                다시 불러오기
+              </button>
+            </p>
+          ) : categories.length === 0 && (
+            <p role="status" className="mb-4 text-sm text-zinc-500">
+              카테고리를 불러오는 중입니다.
+            </p>
+          ))}
 
-          {view === 'orders' ? (
-            <AdminOrders />
-          ) : view === 'list' ? (
+          {view === "orders" ? <AdminOrders /> : view === "list" ? (
             <ProductList
               categories={categories}
               products={products}
               loading={loadingProducts}
               error={listError}
               onEdit={(product) => {
-                setEditingProduct(product)
-                setView('edit')
-                window.scrollTo({ top: 0, behavior: 'smooth' })
+                setEditingProduct(product);
+                setView("edit");
+                window.scrollTo({ top: 0, behavior: "smooth" });
               }}
               onDetail={showProductDetails}
               onDelete={(product) => void deleteProducts([product])}
               onDeleteSelected={deleteProducts}
               deleting={deleting}
-              onRegister={() => navigate('register')}
+              onRegister={() => navigate("register")}
             />
-          ) : view === 'edit' && editingProduct ? (
+          ) : view === "edit" && editingProduct ? (
             <EditProductForm
               categories={categories}
               key={editingProduct.productId}
               product={editingProduct}
-              onCancel={() => navigate('list')}
+              onCancel={() => navigate("list")}
               onComplete={(updated) => {
                 setProducts((current) =>
                   current.map((item) =>
-                    item.productId === updated.productId ? { ...item, ...updated } : item,
+                    item.productId === updated.productId
+                      ? { ...item, ...updated }
+                      : item,
                   ),
-                )
-                setEditingProduct(undefined)
-                showToast('상품 정보가 수정되었습니다.')
-                navigate('list')
+                );
+                setEditingProduct(undefined);
+                showToast("상품 정보가 수정되었습니다.");
+                navigate("list");
               }}
             />
           ) : (
@@ -1978,7 +2078,7 @@ export default function AdminDashboard({ previewMode = false }: { previewMode?: 
               categories={categories}
               key="register"
               mode="register"
-              onCancel={() => navigate('list')}
+              onCancel={() => navigate("list")}
               onComplete={completeForm}
             />
           )}
@@ -1998,14 +2098,20 @@ export default function AdminDashboard({ previewMode = false }: { previewMode?: 
             <Icon name="check" size={15} strokeWidth={2.5} />
           </span>
           <div>
-            <p className="text-sm font-bold text-zinc-800">입력 내용을 확인했습니다</p>
+            <p className="text-sm font-bold text-zinc-800">
+              입력 내용을 확인했습니다
+            </p>
             <p className="mt-0.5 text-xs leading-5 text-zinc-500">{toast}</p>
           </div>
-          <button aria-label="알림 닫기" className="text-zinc-400" onClick={() => setToast('')}>
+          <button
+            aria-label="알림 닫기"
+            className="text-zinc-400"
+            onClick={() => setToast("")}
+          >
             <Icon name="close" size={15} />
           </button>
         </div>
       )}
     </div>
-  )
+  );
 }

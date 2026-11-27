@@ -104,7 +104,9 @@ export async function recommendAutoBuild(
 /**
  * 수동 커스텀 빌드를 서버에 검증 및 저장합니다.
  */
-export async function createManualBuild(payload: ManualBuildRequest): Promise<BuildResponse> {
+export async function createManualBuild(
+  payload: ManualBuildRequest,
+): Promise<BuildResponse> {
   return await buildRequest<BuildResponse>(
     '/api/builds/manual',
     {

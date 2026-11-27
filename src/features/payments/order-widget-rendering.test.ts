@@ -5,27 +5,16 @@ import { renderPaymentWidgets, OrderWidgetRenderingError } from './order-widget-
 const selectors = { payment: '#payment', agreement: '#agreement' }
 test('renders official methods and agreement and disposes both exactly once', async () => {
   const calls: string[] = []
-  const mounted = renderPaymentWidgets(
-    {
-      renderPaymentMethods: async ({ selector }) => {
-        calls.push(selector)
-        return {
-          destroy: async () => {
-            calls.push('payment destroyed')
-          },
-        }
-      },
-      renderAgreement: async ({ selector }) => {
-        calls.push(selector)
-        return {
-          destroy: async () => {
-            calls.push('agreement destroyed')
-          },
-        }
-      },
+  const mounted = renderPaymentWidgets({
+    renderPaymentMethods: async ({ selector }) => {
+      calls.push(selector)
+      return { destroy: async () => { calls.push('payment destroyed') } }
     },
-    selectors,
-  )
+    renderAgreement: async ({ selector }) => {
+      calls.push(selector)
+      return { destroy: async () => { calls.push('agreement destroyed') } }
+    },
+  }, selectors)
   await mounted.ready
   await Promise.all([mounted.dispose(), mounted.dispose()])
   assert.deepEqual(calls, ['#payment', '#agreement', 'agreement destroyed', 'payment destroyed'])
@@ -34,14 +23,8 @@ test('renders official methods and agreement and disposes both exactly once', as
 test('Strict Mode cleanup before rendering creates no stale widgets', async () => {
   let renders = 0
   const widgets = {
-    renderPaymentMethods: async () => {
-      renders++
-      return { destroy: async () => {} }
-    },
-    renderAgreement: async () => {
-      renders++
-      return { destroy: async () => {} }
-    },
+    renderPaymentMethods: async () => { renders++; return { destroy: async () => {} } },
+    renderAgreement: async () => { renders++; return { destroy: async () => {} } },
   }
   const stale = renderPaymentWidgets(widgets, selectors)
   const disposal = stale.dispose()
@@ -55,26 +38,15 @@ test('late render is destroyed before a replacement mounts', async () => {
   const calls: string[] = []
   let finish!: () => void
   let started!: () => void
-  const begun = new Promise<void>((resolve) => {
-    started = resolve
-  })
-  const gate = new Promise<void>((resolve) => {
-    finish = resolve
-  })
+  const begun = new Promise<void>(resolve => { started = resolve })
+  const gate = new Promise<void>(resolve => { finish = resolve })
   let count = 0
   const widgets = {
     renderPaymentMethods: async () => {
       const id = ++count
       calls.push('start ' + id)
-      if (id === 1) {
-        started()
-        await gate
-      }
-      return {
-        destroy: async () => {
-          calls.push('destroy ' + id)
-        },
-      }
+      if (id === 1) { started(); await gate }
+      return { destroy: async () => { calls.push('destroy ' + id) } }
     },
     renderAgreement: async () => ({ destroy: async () => {} }),
   }
@@ -95,19 +67,11 @@ for (const stage of ['payment', 'agreement'] as const) {
     const widgets = {
       renderPaymentMethods: async () => {
         if (failing && stage === 'payment') throw new Error('private SDK detail')
-        return {
-          destroy: async () => {
-            destroyed++
-          },
-        }
+        return { destroy: async () => { destroyed++ } }
       },
       renderAgreement: async () => {
         if (failing) throw new Error('private SDK detail')
-        return {
-          destroy: async () => {
-            destroyed++
-          },
-        }
+        return { destroy: async () => { destroyed++ } }
       },
     }
     const first = renderPaymentWidgets(widgets, selectors)
@@ -131,11 +95,7 @@ test('failed destroy blocks duplicate rendering until a page reload', async () =
   const widgets = {
     renderPaymentMethods: async () => {
       renders++
-      return {
-        destroy: async () => {
-          throw new Error('private')
-        },
-      }
+      return { destroy: async () => { throw new Error('private') } }
     },
     renderAgreement: async () => ({ destroy: async () => {} }),
   }

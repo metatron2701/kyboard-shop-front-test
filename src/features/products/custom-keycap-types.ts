@@ -213,9 +213,7 @@ export function drawRoundedRectPath(
   ctx.closePath()
 }
 
-export function getRotatedBoxCorners(
-  box: LayerBox,
-): Array<{ key: HandleCorner; x: number; y: number }> {
+export function getRotatedBoxCorners(box: LayerBox): Array<{ key: HandleCorner; x: number; y: number }> {
   const hw = box.width / 2
   const hh = box.height / 2
   const cos = Math.cos(box.rotationRad)
@@ -275,10 +273,7 @@ export function isPointOnRotateHandle(px: number, py: number, box: LayerBox): bo
   return Math.hypot(px - handle.knobX, py - handle.knobY) <= 15
 }
 
-export function snapNormalizedPoint(
-  x: number,
-  y: number,
-): {
+export function snapNormalizedPoint(x: number, y: number): {
   x: number
   y: number
   snappedX: boolean
